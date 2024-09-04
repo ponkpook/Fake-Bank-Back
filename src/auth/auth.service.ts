@@ -53,6 +53,8 @@ export class AuthService {
                 password: password
             }
         );
+        this.userService.createDefaultAcc(username);
+
         return 'Registration successful';
     }
 }

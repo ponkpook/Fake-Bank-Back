@@ -54,6 +54,7 @@ let AuthService = class AuthService {
             username: username,
             password: password
         });
+        this.userService.createDefaultAcc(username);
         return 'Registration successful';
     }
 };
