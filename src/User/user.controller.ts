@@ -25,7 +25,7 @@ export class UserController {
     async getUserById(@Param('id') id: string) {
         const isValid = mongoose.Types.ObjectId.isValid(id);
         if(!isValid) throw new HttpException('User not found', 404);
-        const findUser = await this.userService.getUserById(id);
+        const findUser = await this.userService.getUser(id);
         if(!findUser) throw new HttpException('User not found', 404);
 
         return findUser;

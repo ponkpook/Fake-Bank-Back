@@ -22,8 +22,9 @@ let AuthController = class AuthController {
     login() {
         return 'login!';
     }
-    validate(username, password) {
-        if (this.authService.validate(username, password)) {
+    async validate(username, password) {
+        const isValid = await this.authService.validate(username, password);
+        if (isValid) {
             return 'login success!';
         }
         else {
@@ -31,25 +32,7 @@ let AuthController = class AuthController {
         }
     }
     register(username, password, confirmPassword) {
-        if (username === undefined || password === undefined || confirmPassword === undefined ||
-            username === '' || password === '' || confirmPassword === '') {
-            return 'username or password cannot be empty!';
-        }
-        if (this.authService.isUsernameUnique(username)) {
-            if (password === confirmPassword) {
-                this.authService.register(username, password);
-                return 'register success!';
-            }
-            else {
-                return 'passwords do not match!';
-            }
-        }
-        else {
-            return 'username already exists!';
-        }
-    }
-    getUsers() {
-        return this.authService.getUsers() + '\n' + this.authService.getBsbAcc();
+        return this.authService.register(username, password, confirmPassword);
     }
 };
 exports.AuthController = AuthController;
@@ -65,7 +48,7 @@ __decorate([
     __param(1, (0, common_1.Query)('password')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
-    __metadata("design:returntype", String)
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "validate", null);
 __decorate([
     (0, common_1.Post)('register'),
@@ -74,14 +57,8 @@ __decorate([
     __param(2, (0, common_1.Query)('confirmPassword')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, String]),
-    __metadata("design:returntype", String)
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
-__decorate([
-    (0, common_1.Get)('getUsers'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", String)
-], AuthController.prototype, "getUsers", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

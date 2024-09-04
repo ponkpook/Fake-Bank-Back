@@ -5,19 +5,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
+const user_service_1 = require("../User/user.service");
 let AuthService = class AuthService {
-    constructor() {
-        this.userNamePair = [
-            { username: 'admin1', password: 'admin1' },
-            { username: 'admin2', password: 'admin2' }
-        ];
-        this.userBsbAcc = [
-            { username: 'admin1', bsb: '000-001', acc: '0000001' },
-            { username: 'admin2', bsb: '000-001', acc: '0000002' }
-        ];
+    constructor(userService) {
+        this.userService = userService;
         this.bsbPool = [
             '000-001',
             '000-002',
@@ -31,32 +28,38 @@ let AuthService = class AuthService {
             '112-002'
         ];
     }
-    validate(username, password) {
-        return this.userNamePair.some((pair) => pair.username === username && pair.password === password);
-    }
-    isUsernameUnique(username) {
-        return !(this.userNamePair.some((pair) => pair.username === username));
-    }
-    register(username, password) {
-        this.userNamePair.push({ username, password });
-        let ramdomAccountN = Math.floor(Math.random() * 1000000).toString();
-        ramdomAccountN = ramdomAccountN.padStart(7, '0');
-        while (this.userBsbAcc.some((pair) => pair.acc === ramdomAccountN)) {
-            ramdomAccountN = Math.floor(Math.random() * 1000000).toString();
-            ramdomAccountN = ramdomAccountN.padStart(7, '0');
+    async validate(username, password) {
+        const user = await this.userService.getUser(username);
+        if (user == null) {
+            return false;
         }
-        const bsb = this.bsbPool[Math.floor(Math.random() * 10)];
-        this.userBsbAcc.push({ username, bsb, acc: ramdomAccountN });
+        if (user.password === password) {
+            return true;
+        }
+        return false;
     }
-    getUsers() {
-        return JSON.stringify(this.userNamePair);
-    }
-    getBsbAcc() {
-        return JSON.stringify(this.userBsbAcc);
+    async register(username, password, confirmPassword) {
+        if (username == "" || password == "" || confirmPassword == ""
+            || username == null || password == null || confirmPassword == null) {
+            return 'Please fill out all fields';
+        }
+        if (password !== confirmPassword) {
+            return 'Passwords do not match';
+        }
+        const user = await this.userService.getUser(username);
+        if (user != null) {
+            return 'Username already exists';
+        }
+        this.userService.createUser({
+            username: username,
+            password: password
+        });
+        return 'Registration successful';
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [user_service_1.UserService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
