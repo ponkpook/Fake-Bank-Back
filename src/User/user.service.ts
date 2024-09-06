@@ -1,10 +1,11 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, HttpException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from 'mongoose'
 import { User } from 'src/schemas/user.schema'
 import { userAccount } from "src/schemas/userAccount.schema";
 import { createUserDto } from "./dto/CreateUser.dto";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
+import { TransferDto } from './dto/Transfer.dto';
 
 
 @Injectable()
@@ -52,6 +53,38 @@ export class UserService{
         const newAcc2 = new this.userAccountModel(defaultAcc2);
         await Promise.all([newAcc1.save(), newAcc2.save()]);
         return;
+    }
+
+
+    async transferMoney(transferDto: TransferDto): Promise<string> {
+        
+        const { fromAccount, toAccount, amount } = transferDto;
+
+        if (amount <= 0) {
+            throw new HttpException('Transfer amount must be greater than zero', 400);
+        }
+
+        const sender = await this.userAccountModel.findOne({ accountNumber: fromAccount });
+        if (!sender) {
+            throw new HttpException('Sender account not found', 404);
+        }
+
+        const recipient = await this.userAccountModel.findOne({ accountNumber: toAccount });
+        if (!recipient) {
+            throw new HttpException('Recipient account not found', 404);
+        }
+
+        if (sender.balance < amount) {
+            throw new HttpException('Insufficient funds', 400);
+        }
+
+        sender.balance -= amount;
+        recipient.balance += amount;
+
+        // Save both accounts
+        await Promise.all([sender.save(), recipient.save()]);
+
+        return 'Transfer successful';
     }
 
     getUsers(){

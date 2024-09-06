@@ -3,6 +3,7 @@ import { UserService } from "./user.service";
 import { createUserDto } from "./dto/CreateUser.dto";
 import mongoose, { Mongoose } from "mongoose";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
+import { TransferDto } from './dto/Transfer.dto';
 
 @Controller('user')
 export class UserController {
@@ -50,6 +51,12 @@ export class UserController {
         const deletedUser = await this.userService.deleteUser(id);
         console.log(deletedUser);
         
+    }
+
+    @Post('transfer')
+    @UsePipes(new ValidationPipe())
+    async transfer(@Body() transferDto: TransferDto) {
+        return this.userService.transferMoney(transferDto);
     }
 
 }
