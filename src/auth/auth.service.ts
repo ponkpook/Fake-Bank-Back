@@ -55,6 +55,6 @@ export class AuthService {
         );
         this.userService.createDefaultAcc(username);
 
-        return 'Registration successful';
+        return 'User created';
     }
 }

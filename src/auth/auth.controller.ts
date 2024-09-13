@@ -11,18 +11,14 @@ export class AuthController {
     }
 
     @Post('login')
-    async validate(@Query('username') username: string, @Query('password') password: string): Promise<string> {
+    async validate(@Body('username') username: string, @Body('password') password: string): Promise<{ success: boolean }> {
         const isValid = await this.authService.validate(username, password);
-        if (isValid) {
-            return 'login success!';
-        } else {
-            return "invalid username or password!";
-        }
+        return {success: isValid};
     }
 
     @Post('register')
-    register(@Query('username') username:string, @Query('password') password: string, @Query('confirmPassword') confirmPassword: string): Promise<string> {
+    register(@Body('username') username:string, @Body('password') password: string): Promise<string> {
+        const confirmPassword = password;
         return this.authService.register(username, password, confirmPassword);
-    }
-        
+    }   
 }
