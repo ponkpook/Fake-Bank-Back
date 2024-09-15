@@ -35,23 +35,29 @@ export class UserService{
     }
 
     async createDefaultAcc(username: string){
-        const defaultAcc1 = {
-            username: username,
-            accountName: "Default Account 1",
-            accountNumber: Math.floor(Math.random() * 1000000).toString(),
-            BSB: this.bsbPool[Math.floor(Math.random() * this.bsbPool.length)],
-            balance: 10000,
-        }
-        const defaultAcc2 = {
-            username: username,
-            accountName: "Default Account 2",
-            accountNumber: Math.floor(Math.random() * 10000000).toString().padStart(7, '0'),
-            BSB: this.bsbPool[Math.floor(Math.random() * this.bsbPool.length)],
-            balance: 10000,
-        }
-        const newAcc1 = new this.userAccountModel(defaultAcc1);
-        const newAcc2 = new this.userAccountModel(defaultAcc2);
-        await Promise.all([newAcc1.save(), newAcc2.save()]);
+        this.addNewAccount(username,"Everyday", 100.00);
+        this.addNewAccount(username,"Savings", 1000.00);
+        return;
+    }
+
+    async isUniqueAccNum(accNum: string): Promise<boolean> {
+        const notUnique = await this.userAccountModel.findOne({ accountNumber: accNum }).exec();
+        return !notUnique;
+    }
+
+    async addNewAccount(username: string, accountName: string, balance: number): Promise<void> {
+        let account;
+        do {
+            account = {
+                username: username,
+                accountName: accountName,
+                accountNumber: Math.floor(Math.random() * 10000000).toString().padStart(7, '0'),
+                BSB: this.bsbPool[Math.floor(Math.random() * this.bsbPool.length)],
+                balance: balance,
+            }
+        } while (!(await this.isUniqueAccNum(account.accountNumber)));
+        const newAcc1 = new this.userAccountModel(account);
+        await newAcc1.save();
         return;
     }
 
@@ -87,10 +93,11 @@ export class UserService{
         return 'Transfer successful';
     }
 
+
     getUsers(){
         return this.userModel.find();
     }
-    getUser(username: string){
+    getUser(username: string) {
         return this.userModel.findOne({username}).exec();
     }
     updateUser(id: string, UpdateUserDto: UpdateUserDto){
@@ -99,6 +106,8 @@ export class UserService{
     deleteUser(id: string){
         return this.userModel.findByIdAndDelete(id);
     }
-
+    getUserAccounts(username: string){
+        return this.userAccountModel.find({username}).exec();
+    }
 
 }

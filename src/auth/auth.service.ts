@@ -31,7 +31,6 @@ export class AuthService {
     }
 
     public async register(username: string, password: string, confirmPassword: string): Promise<string> {
-        
         if (username == "" || password == "" || confirmPassword == ""
             || username == null || password == null || confirmPassword == null
         ){

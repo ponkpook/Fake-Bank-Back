@@ -22,15 +22,20 @@ export class UserController {
         return this.userService.getUsers()
     }
 
-    @Get(':id')
-    async getUserById(@Param('id') id: string) {
-        const isValid = mongoose.Types.ObjectId.isValid(id);
-        if(!isValid) throw new HttpException('User not found', 404);
-        const findUser = await this.userService.getUser(id);
+    @Get(':username')
+    async getUser(@Param('username') username: string) {
+        const findUser = await this.userService.getUser(username);
         if(!findUser) throw new HttpException('User not found', 404);
-
         return findUser;
     }
+
+    @Get(':username/accounts')
+    async getUserAccounts(@Param('username') username: string) {
+        const findUser = await this.userService.getUserAccounts(username);
+        if(!findUser) throw new HttpException('User not found', 404);
+        return findUser;
+    }
+
 
     @Patch(':id')
     @UsePipes(new ValidationPipe())

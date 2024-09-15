@@ -15,7 +15,7 @@ export class AuthController {
         const isValid = await this.authService.validate(username, password);
         return {success: isValid};
     }
-
+    
     @Post('register')
     register(@Body('username') username:string, @Body('password') password: string): Promise<string> {
         const confirmPassword = password;

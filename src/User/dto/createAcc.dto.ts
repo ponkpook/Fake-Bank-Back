@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
-export class createDefaultAcc {
+export class createtAcc {
     @IsNotEmpty()
     @IsString()
     username: string;

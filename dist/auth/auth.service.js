@@ -55,7 +55,7 @@ let AuthService = class AuthService {
             password: password
         });
         this.userService.createDefaultAcc(username);
-        return 'Registration successful';
+        return 'User created';
     }
 };
 exports.AuthService = AuthService;
