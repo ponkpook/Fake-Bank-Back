@@ -4,7 +4,7 @@ import { User, UserSchema } from "src/schemas/user.schema";
 import { userAccount, userAccountSchema } from "src/schemas/userAccount.schema";
 import { UserService } from "./user.service";
 import { UserController } from "./user.controller";
-
+import { transactionHistory, transactionHistorySchema } from "src/schemas/transactionHistory.schema";
 @Module({
     imports: [
         MongooseModule.forFeature([{
@@ -13,6 +13,9 @@ import { UserController } from "./user.controller";
         }, {
             name: userAccount.name,
             schema: userAccountSchema
+            }, {
+            name: transactionHistory.name,
+            schema: transactionHistorySchema
         }])
     ],
     providers: [UserService], 

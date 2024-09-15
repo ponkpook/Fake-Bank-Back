@@ -6,13 +6,15 @@ import { userAccount } from "src/schemas/userAccount.schema";
 import { createUserDto } from "./dto/CreateUser.dto";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
+import { transactionHistory } from "src/schemas/transactionHistory.schema";
 
 
 @Injectable()
 export class UserService{
     constructor(
         @InjectModel(User.name) private userModel: Model<User>,
-        @InjectModel(userAccount.name) private userAccountModel: Model<userAccount>
+        @InjectModel(userAccount.name) private userAccountModel: Model<userAccount>,
+        @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<userAccount>
     ) { }
 
     private bsbPool = [
@@ -90,9 +92,25 @@ export class UserService{
         // Save both accounts
         await Promise.all([sender.save(), recipient.save()]);
 
+        const record = ({
+            username: sender.username,
+            fromAccNumber: fromAccount,
+            toAccNumber: toAccount,
+            amount: amount,
+            date: new Date(),
+            time: new Date().toLocaleTimeString()
+        });
+
+        const newRecord = new this.transactionHistoryModel(record);
+        await newRecord.save();
+        
         return 'Transfer successful';
     }
 
+    async getUserTransactions(username: string) {
+        const transactions = await this.transactionHistoryModel.find({ username }).exec();
+        return transactions;
+    }
 
     getUsers(){
         return this.userModel.find();

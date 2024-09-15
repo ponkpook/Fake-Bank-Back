@@ -36,6 +36,12 @@ export class UserController {
         return findUser;
     }
 
+    @Get(':username/transactions')
+    async getUserAccount(@Param('username') username: string, @Param('accountNumber') accountNumber: string) {
+        const transactions = await this.userService.getUserTransactions(username);
+        if (!transactions) throw new HttpException('User not found', 404);
+        return transactions;
+    }
 
     @Patch(':id')
     @UsePipes(new ValidationPipe())
