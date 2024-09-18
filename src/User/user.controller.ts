@@ -4,6 +4,7 @@ import { createUserDto } from "./dto/CreateUser.dto";
 import mongoose, { Mongoose } from "mongoose";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
+import { BPAYDto } from "./dto/BPay.dto";
 
 @Controller('user')
 export class UserController {
@@ -22,25 +23,14 @@ export class UserController {
         return this.userService.getUsers()
     }
 
-    @Get(':username')
-    async getUser(@Param('username') username: string) {
-        const findUser = await this.userService.getUser(username);
+    @Get(':id')
+    async getUserById(@Param('id') id: string) {
+        const isValid = mongoose.Types.ObjectId.isValid(id);
+        if(!isValid) throw new HttpException('User not found', 404);
+        const findUser = await this.userService.getUser(id);
         if(!findUser) throw new HttpException('User not found', 404);
-        return findUser;
-    }
 
-    @Get(':username/accounts')
-    async getUserAccounts(@Param('username') username: string) {
-        const findUser = await this.userService.getUserAccounts(username);
-        if(!findUser) throw new HttpException('User not found', 404);
         return findUser;
-    }
-
-    @Get(':username/transactions')
-    async getUserAccount(@Param('username') username: string, @Param('accountNumber') accountNumber: string) {
-        const transactions = await this.userService.getUserTransactions(username);
-        if (!transactions) throw new HttpException('User not found', 404);
-        return transactions;
     }
 
     @Patch(':id')
@@ -68,6 +58,26 @@ export class UserController {
     @UsePipes(new ValidationPipe())
     async transfer(@Body() transferDto: TransferDto) {
         return this.userService.transferMoney(transferDto);
+    }
+
+    @Get(':accountNumber/transactions')
+    async getTransactionsForAccount(@Param('accountNumber') accountNumber: string) {
+        return this.userService.getTransactionsForAccount(accountNumber);
+    }
+
+        // Route to register a BPAY account for a company
+    @Post('BPAY/register')
+    @UsePipes(new ValidationPipe())
+    async registerBpayAccount(@Body('billerCode') billerCode: string, @Body('companyName') companyName: string, @Body('referenceNumber') referenceNumber: string) {
+        return this.userService.registerBpayAccount(billerCode, companyName, referenceNumber);
+    }
+
+
+    // Route to make a BPAY payment
+    @Post('BPAY')
+    @UsePipes(new ValidationPipe())
+    async bpayPayment(@Body() bpayDto: BPAYDto) {
+        return this.userService.bpayPayment(bpayDto);
     }
 
 }
