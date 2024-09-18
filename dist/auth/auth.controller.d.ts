@@ -6,5 +6,8 @@ export declare class AuthController {
     validate(username: string, password: string): Promise<{
         success: boolean;
     }>;
-    register(username: string, password: string): Promise<string>;
+    register(username: string, password: string): Promise<{
+        msg: String;
+        success: Boolean;
+    }>;
 }

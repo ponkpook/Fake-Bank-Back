@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UsePipes, ValidationPipe, Get, Param, HttpException, Patch, Delete } from "@nestjs/common";
+import { Controller, Post, Body, UsePipes, ValidationPipe, Get, Param, HttpException, Patch, Delete, Query } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { createUserDto } from "./dto/CreateUser.dto";
 import mongoose, { Mongoose } from "mongoose";
@@ -43,6 +43,12 @@ export class UserController {
         return transactions;
     }
 
+    @Post(':username/newAccount')
+    async newAccount(@Query('username') username: string, @Query('accountName') accountName: string, @Query('balance') balance: number) {
+        const newAccount = await this.userService.addNewAccount(username, accountName, balance);
+        return newAccount;
+    }
+
     @Patch(':id')
     @UsePipes(new ValidationPipe())
     async updateUser(@Param('id') id:string, @Body() UpdateUserDto: UpdateUserDto){
@@ -64,10 +70,15 @@ export class UserController {
         
     }
 
-    @Post('transfer')
+    @Post(':username/transfer')
     @UsePipes(new ValidationPipe())
     async transfer(@Body() transferDto: TransferDto) {
         return this.userService.transferMoney(transferDto);
     }
 
+    @Patch(':username/deposit')
+    async deposit(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number) {
+        return this.userService.deposit(username, accountNumber, amount);
+    }
+    
 }

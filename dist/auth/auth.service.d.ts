@@ -2,7 +2,9 @@ import { UserService } from 'src/User/user.service';
 export declare class AuthService {
     private readonly userService;
     constructor(userService: UserService);
-    private bsbPool;
     validate(username: string, password: string): Promise<boolean>;
-    register(username: string, password: string, confirmPassword: string): Promise<string>;
+    register(username: string, password: string, confirmPassword: string): Promise<{
+        msg: String;
+        success: Boolean;
+    }>;
 }

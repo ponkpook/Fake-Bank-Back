@@ -17,8 +17,9 @@ export class AuthController {
     }
     
     @Post('register')
-    register(@Body('username') username:string, @Body('password') password: string): Promise<string> {
+    register(@Body('username') username: string, @Body('password') password: string): Promise<{msg:String, success:Boolean}> {
         const confirmPassword = password;
         return this.authService.register(username, password, confirmPassword);
     }   
+
 }

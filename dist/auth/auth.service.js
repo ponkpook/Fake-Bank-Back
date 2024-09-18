@@ -15,18 +15,6 @@ const user_service_1 = require("../User/user.service");
 let AuthService = class AuthService {
     constructor(userService) {
         this.userService = userService;
-        this.bsbPool = [
-            '000-001',
-            '000-002',
-            '000-003',
-            '000-004',
-            '000-005',
-            '111-001',
-            '111-002',
-            '111-003',
-            '112-001',
-            '112-002'
-        ];
     }
     async validate(username, password) {
         const user = await this.userService.getUser(username);
@@ -41,21 +29,21 @@ let AuthService = class AuthService {
     async register(username, password, confirmPassword) {
         if (username == "" || password == "" || confirmPassword == ""
             || username == null || password == null || confirmPassword == null) {
-            return 'Please fill out all fields';
+            return { msg: 'Please fill out all fields', success: false };
         }
         if (password !== confirmPassword) {
-            return 'Passwords do not match';
+            return { msg: 'Passwords do not match', success: false };
         }
         const user = await this.userService.getUser(username);
         if (user != null) {
-            return 'Username already exists';
+            return { msg: 'Username already exists', success: false };
         }
         this.userService.createUser({
             username: username,
             password: password
         });
         this.userService.createDefaultAcc(username);
-        return 'User created';
+        return { msg: 'User created', success: true };
     }
 };
 exports.AuthService = AuthService;

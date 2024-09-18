@@ -47,7 +47,8 @@ export class UserService{
         return !notUnique;
     }
 
-    async addNewAccount(username: string, accountName: string, balance: number): Promise<void> {
+    async addNewAccount(username: string, accountName: string, balance: number):
+        Promise<{username:String, accountName:String, accountNumber:String, BSB:String, balance:number}> {
         let account;
         do {
             account = {
@@ -60,7 +61,7 @@ export class UserService{
         } while (!(await this.isUniqueAccNum(account.accountNumber)));
         const newAcc1 = new this.userAccountModel(account);
         await newAcc1.save();
-        return;
+        return account;
     }
 
 
@@ -112,6 +113,13 @@ export class UserService{
         return transactions;
     }
 
+    async deposit(username: string, accountNumber: string, amount: number) {
+        const account = await this.getUserAccount(username, accountNumber);
+        account.balance = Number(account.balance)+Number(amount);
+        await account.save();
+        return;
+    }
+
     getUsers(){
         return this.userModel.find();
     }
@@ -127,5 +135,7 @@ export class UserService{
     getUserAccounts(username: string){
         return this.userAccountModel.find({username}).exec();
     }
-
+    getUserAccount(username: string, accountNumber: string) {
+        return this.userAccountModel.findOne({ username, accountNumber }).exec();
+    }
 }

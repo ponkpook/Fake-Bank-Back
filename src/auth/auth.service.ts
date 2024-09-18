@@ -6,19 +6,6 @@ export class AuthService {
 
     constructor(private readonly userService: UserService) {}
 
-    private bsbPool = [
-        '000-001',
-        '000-002',
-        '000-003',
-        '000-004',
-        '000-005',
-        '111-001',
-        '111-002',
-        '111-003',
-        '112-001',
-        '112-002'
-    ]
-
     public async validate(username: string, password: string): Promise<boolean> {
         const user = await this.userService.getUser(username); 
         if (user == null) {
@@ -30,20 +17,20 @@ export class AuthService {
         return false;
     }
 
-    public async register(username: string, password: string, confirmPassword: string): Promise<string> {
+    public async register(username: string, password: string, confirmPassword: string): Promise<{msg:String, success:Boolean}> {
         if (username == "" || password == "" || confirmPassword == ""
             || username == null || password == null || confirmPassword == null
         ){
-            return 'Please fill out all fields';
+            return {msg:'Please fill out all fields', success:false};
         }
 
         if (password !== confirmPassword) {
-            return 'Passwords do not match';
+            return {msg:'Passwords do not match', success:false};   
         }
 
         const user = await this.userService.getUser(username);
         if (user != null) {
-            return 'Username already exists';
+            return {msg: 'Username already exists', success:false};
         }
             
         this.userService.createUser(
@@ -54,6 +41,6 @@ export class AuthService {
         );
         this.userService.createDefaultAcc(username);
 
-        return 'User created';
+        return { msg: 'User created', success: true };
     }
 }
