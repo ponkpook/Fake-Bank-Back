@@ -98,11 +98,8 @@ export class UserService{
             toAccNumber: toAccount,
             amount: amount,
             date: new Date(),
-            time: new Date().toLocaleTimeString()
         });
 
-        const newRecord = new this.transactionHistoryModel(record);
-        await newRecord.save();
         
         return 'Transfer successful';
     }
