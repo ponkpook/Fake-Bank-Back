@@ -80,5 +80,11 @@ export class UserController {
     async deposit(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number) {
         return this.userService.deposit(username, accountNumber, amount);
     }
+
+    @Post(':username/BPAY')
+    @UsePipes(new ValidationPipe())
+    async bpayPayment(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number, @Query('billerCode') billerCode: string, @Query('companyName') companyName: string, @Query('referenceNumber') referenceNumber: string): Promise<string> {
+        return this.userService.bpayPayment(username, accountNumber, billerCode, companyName, referenceNumber, amount);
+    }
     
 }

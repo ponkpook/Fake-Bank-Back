@@ -7,14 +7,15 @@ import { createUserDto } from "./dto/CreateUser.dto";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
 import { transactionHistory } from "src/schemas/transactionHistory.schema";
-
+import { BPAYHistory } from "src/schemas/BPAY.schema";
 
 @Injectable()
 export class UserService{
     constructor(
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(userAccount.name) private userAccountModel: Model<userAccount>,
-        @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<userAccount>
+        @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<userAccount>,
+        @InjectModel(BPAYHistory.name) private BPAYHistory: Model<BPAYHistory>
     ) { }
 
     private bsbPool = [
@@ -118,6 +119,44 @@ export class UserService{
         account.balance = Number(account.balance)+Number(amount);
         await account.save();
         return;
+    }
+
+
+    async bpayPayment(username: String,fromAccNumber:String, billerCode:String, companyName:String, referenceNumber:String, amount:number): Promise<string> {
+        if (amount <= 0) {
+            throw new HttpException('Payment amount must be greater than zero', 400);
+        }
+    
+        // Fetch the user's account
+        const sender = await this.userAccountModel.findOne({ accountNumber: fromAccNumber });
+        if (!sender) {
+            throw new HttpException('Sender account not found', 404);
+        }
+    
+    
+        // Check if the sender has sufficient funds
+        if (sender.balance < amount) {
+            throw new HttpException('Insufficient funds', 400);
+        }
+    
+        // Deduct the amount from the user's account
+        sender.balance -= amount;
+        await sender.save();
+    
+        // Create a BPAY transaction record
+        const newTransaction = new this.BPAYHistory({
+            username,
+            fromAccNumber,
+            billerCode,
+            companyName,
+            referenceNumber,
+            amount,
+            date: new Date(),
+            time: new Date().toLocaleTimeString()
+        });
+        await newTransaction.save();
+    
+        return `BPAY payment to ${companyName} successful`;
     }
 
     getUsers(){
