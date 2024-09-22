@@ -109,14 +109,10 @@ export class UserService{
         return 'Transfer successful';
     }
 
-    async getUserTransactions(username: string) {
-        const transactions = await this.transactionHistoryModel.find({ username }).exec();
-        return transactions;
-    }
 
     async deposit(username: string, accountNumber: string, amount: number) {
         const account = await this.getUserAccount(username, accountNumber);
-        account.balance = Number(account.balance)+Number(amount);
+        account.balance = Number(account.balance) + Number(amount);
         await account.save();
         return;
     }
@@ -157,6 +153,13 @@ export class UserService{
         await newTransaction.save();
     
         return `BPAY payment to ${companyName} successful`;
+    }
+
+    async getUserTransactions(username: string) {
+        const transactions = await this.transactionHistoryModel.find({ username }).exec();
+        const BPAYTransactions = await this.BPAYHistory.find({ username }).exec();
+        const allTransactions = [...transactions, ...BPAYTransactions];
+        return allTransactions;
     }
 
     getUsers(){
