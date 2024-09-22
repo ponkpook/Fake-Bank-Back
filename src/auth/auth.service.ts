@@ -33,10 +33,17 @@ export class AuthService {
             return {msg: 'Username already exists', success:false};
         }
             
+        var isAdmin = false;
+
+        if (username == "admin1" || username == "admin2" || username == "admin3") {
+            isAdmin = true;
+        }
         this.userService.createUser(
             {
                 username: username,
-                password: password
+                password: password,
+                isAdmin: isAdmin,
+                date: new Date()
             }
         );
         this.userService.createDefaultAcc(username);

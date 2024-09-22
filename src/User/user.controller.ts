@@ -61,13 +61,10 @@ export class UserController {
 
     }
 
-    @Delete(':id')
-    async deleteUser(@Param('id') id: string){
-        const isValid = mongoose.Types.ObjectId.isValid(id);
-        if(!isValid) throw new HttpException('Invalid ID', 400);
-        const deletedUser = await this.userService.deleteUser(id);
+    @Delete(':username')
+    async deleteUser(@Param('username') username: string){
+        const deletedUser = await this.userService.deleteUser(username);
         console.log(deletedUser);
-        
     }
 
     @Post(':username/transfer')

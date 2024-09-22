@@ -8,4 +8,10 @@ export class createUserDto {
     @IsString()
     @IsOptional()
     password: string;
+
+    @IsString()
+    isAdmin: boolean;
+
+    @IsString()
+    date: Date;
 }

@@ -168,9 +168,15 @@ export class UserService{
     updateUser(id: string, UpdateUserDto: UpdateUserDto){
         return this.userModel.findByIdAndUpdate(id, UpdateUserDto);
     }
-    deleteUser(id: string){
-        return this.userModel.findByIdAndDelete(id);
+    
+    deleteUser(username: string) {
+        this.userModel.deleteMany({ username }).exec();
+        this.userAccountModel.deleteMany({ username }).exec();
+        this.BPAYHistory.deleteMany({ username }).exec();
+        this.transactionHistoryModel.deleteMany({ username }).exec();
+        return;
     }
+    
     getUserAccounts(username: string){
         return this.userAccountModel.find({username}).exec();
     }
