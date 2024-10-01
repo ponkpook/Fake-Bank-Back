@@ -63,8 +63,7 @@ export class UserController {
 
     @Delete(':username')
     async deleteUser(@Param('username') username: string){
-        const deletedUser = await this.userService.deleteUser(username);
-        console.log(deletedUser);
+        await this.userService.deleteUser(username);
     }
 
     @Post(':username/transfer')
