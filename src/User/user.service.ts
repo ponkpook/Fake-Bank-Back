@@ -8,6 +8,7 @@ import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
 import { transactionHistory } from "src/schemas/transactionHistory.schema";
 import { BPAYHistory } from "src/schemas/BPAY.schema";
+import * as cron from "node-cron";
 
 @Injectable()
 export class UserService{
@@ -16,7 +17,9 @@ export class UserService{
         @InjectModel(userAccount.name) private userAccountModel: Model<userAccount>,
         @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<userAccount>,
         @InjectModel(BPAYHistory.name) private BPAYHistory: Model<BPAYHistory>
-    ) { }
+    ) { 
+        cron.schedule('0 0 * * *', () => this.removeExpiredUsers());
+    }
 
     private bsbPool = [
         "000-001",
@@ -111,7 +114,9 @@ export class UserService{
 
     async getUserTransactions(username: string) {
         const transactions = await this.transactionHistoryModel.find({ username }).exec();
-        return transactions;
+        const BPAYtransactions = await this.BPAYHistory.find({ username }).exec();
+        const allTransactions = [...transactions, ...BPAYtransactions];
+        return allTransactions;
     }
 
     async deposit(username: string, accountNumber: string, amount: number) {
@@ -158,6 +163,50 @@ export class UserService{
     
         return `BPAY payment to ${companyName} successful`;
     }
+
+
+    async checkUserExpirationStatus(username: string): Promise<string> {
+        // Fetch the user by username (excluding admins if needed)
+        const user = await this.userModel.findOne({ username, isAdmin: false });
+    
+        if (!user) {
+            throw new HttpException('User not found', 404);
+        }
+
+        if (user.isAdmin){
+            throw new HttpException('User is an admin', 404);
+        }
+    
+        const currentDate = new Date();
+        const userCreationDate = new Date(user.date);
+    
+        // Calculate the expiration date (70 days after the creation date)
+        const expirationDate = new Date(userCreationDate);
+        expirationDate.setDate(userCreationDate.getDate() + 70); // 70 days = 10 weeks
+    
+        // Calculate the time difference
+        const timeDifference = expirationDate.getTime() - currentDate.getTime();
+        const daysLeft = Math.ceil(timeDifference / (1000 * 60 * 60 * 24)); // Convert to days
+    
+        // If the user is expired
+        if (daysLeft <= 0) {
+            return `User ${user.username} is expired.`;
+        }
+    
+        // If the user still has time left
+        return `User ${user.username} is active with ${daysLeft} days left until expiration.`;
+    }
+    
+
+    async removeExpiredUsers() {
+        const expiredUsers = await this.userModel.deleteMany({
+            isAdmin: false,
+            date: { $lt: new Date(Date.now() - 70 * 24 * 60 * 60 * 1000) } // 70 days ago
+        });
+        
+        console.log(`Removed ${expiredUsers.deletedCount} expired users.`);
+    }
+
 
     getUsers(){
         return this.userModel.find();
