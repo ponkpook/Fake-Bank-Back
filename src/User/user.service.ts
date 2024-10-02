@@ -8,6 +8,8 @@ import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
 import { transactionHistory } from "src/schemas/transactionHistory.schema";
 import { BPAYHistory } from "src/schemas/BPAY.schema";
+import { existingPayee } from "src/schemas/existingPayee.schema";
+import { payeeDTO } from "./dto/existingPayee.dto";
 
 @Injectable()
 export class UserService{
@@ -15,7 +17,8 @@ export class UserService{
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(userAccount.name) private userAccountModel: Model<userAccount>,
         @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<userAccount>,
-        @InjectModel(BPAYHistory.name) private BPAYHistory: Model<BPAYHistory>
+        @InjectModel(BPAYHistory.name) private BPAYHistory: Model<BPAYHistory>,
+        @InjectModel(existingPayee.name) private existingPayeeModel: Model<existingPayee>
     ) { }
 
     private bsbPool = [
@@ -66,34 +69,23 @@ export class UserService{
     }
 
 
-    async transferMoney(transferDto: TransferDto): Promise<string> {
-        
+// transfer to others does not require a existing bsb and account number
+async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
         const { fromAccount, toAccount, amount } = transferDto;
-
         if (amount <= 0) {
             throw new HttpException('Transfer amount must be greater than zero', 400);
         }
-
         const sender = await this.userAccountModel.findOne({ accountNumber: fromAccount });
         if (!sender) {
             throw new HttpException('Sender account not found', 404);
         }
-
         const recipient = await this.userAccountModel.findOne({ accountNumber: toAccount });
-        if (!recipient) {
-            throw new HttpException('Recipient account not found', 404);
-        }
-
         if (sender.balance < amount) {
             throw new HttpException('Insufficient funds', 400);
         }
-
         sender.balance -= amount;
-        recipient.balance += amount;
-
         // Save both accounts
-        await Promise.all([sender.save(), recipient.save()]);
-
+        await Promise.all([sender.save()]);
         const record = ({
             username: sender.username,
             fromAccNumber: fromAccount,
@@ -102,10 +94,44 @@ export class UserService{
             date: new Date(),
             time: new Date().toLocaleTimeString()
         });
-
         const newRecord = new this.transactionHistoryModel(record);
         await newRecord.save();
-        
+        return 'Transfer successful';
+    }
+
+
+
+
+    async transferMoney(transferDto: TransferDto): Promise<string> {
+        const { fromAccount, toAccount, amount } = transferDto;
+        if (amount <= 0) {
+            throw new HttpException('Transfer amount must be greater than zero', 400);
+        }
+        const sender = await this.userAccountModel.findOne({ accountNumber: fromAccount });
+        if (!sender) {
+            throw new HttpException('Sender account not found', 404);
+        }
+        const recipient = await this.userAccountModel.findOne({ accountNumber: toAccount });
+        if (!recipient) {
+            throw new HttpException('Recipient account not found', 404);
+        }
+        if (sender.balance < amount) {
+            throw new HttpException('Insufficient funds', 400);
+        }
+        sender.balance -= amount;
+        recipient.balance += amount;
+        // Save both accounts
+        await Promise.all([sender.save(), recipient.save()]);
+        const record = ({
+            username: sender.username,
+            fromAccNumber: fromAccount,
+            toAccNumber: toAccount,
+            amount: amount,
+            date: new Date(),
+            time: new Date().toLocaleTimeString()
+        });
+        const newRecord = new this.transactionHistoryModel(record);
+        await newRecord.save();
         return 'Transfer successful';
     }
 
@@ -182,5 +208,20 @@ export class UserService{
     }
     getUserAccount(username: string, accountNumber: string) {
         return this.userAccountModel.findOne({ username, accountNumber }).exec();
+    }
+
+    async getPayees(username: string): Promise<payeeDTO[]> {
+        const accounts = await this.existingPayeeModel.find({ username }).exec();
+        return accounts;
+    }
+
+    async addPayee(payeeDto: payeeDTO): Promise<{ success: boolean, message:string }> {
+        if (this.userAccountModel.findOne({ accountNumber: payeeDto.accountNumber, BSB: payeeDto.BSB }) == null) {
+            return { success: false, message: 'Account number or BSB does not exist' };
+        } else {
+            const newPayee = new this.existingPayeeModel(payeeDto);
+            await newPayee.save();
+            return { success: true, message: 'Payee added successfully' };
+        }
     }
 }

@@ -6,6 +6,7 @@ import { UserService } from "./user.service";
 import { UserController } from "./user.controller";
 import { transactionHistory, transactionHistorySchema } from "src/schemas/transactionHistory.schema";
 import { BPAYHistory, BPAYSchema } from "src/schemas/BPAY.schema";
+import { existingPayee, existingPayeeSchema } from "src/schemas/existingPayee.schema";
 @Module({
     imports: [
         MongooseModule.forFeature([
@@ -25,6 +26,10 @@ import { BPAYHistory, BPAYSchema } from "src/schemas/BPAY.schema";
             name: BPAYHistory.name,
             schema: BPAYSchema
         },
+        {
+            name: existingPayee.name,
+            schema: existingPayeeSchema
+        }
         ])
     ],
     providers: [UserService], 

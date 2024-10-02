@@ -4,6 +4,7 @@ import { createUserDto } from "./dto/CreateUser.dto";
 import mongoose, { Mongoose } from "mongoose";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
+import { payeeDTO } from './dto/existingPayee.dto';
 
 @Controller('user')
 export class UserController {
@@ -72,6 +73,12 @@ export class UserController {
         return this.userService.transferMoney(transferDto);
     }
 
+    @Post(':username/transferToOthers')
+    @UsePipes(new ValidationPipe())
+    async transferToOthers(@Body() transferDto: TransferDto) {
+        return this.userService.transferMoneyToOthers(transferDto);
+    }
+
     @Patch(':username/deposit')
     async deposit(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number) {
         return this.userService.deposit(username, accountNumber, amount);
@@ -82,5 +89,15 @@ export class UserController {
     async bpayPayment(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number, @Query('billerCode') billerCode: string, @Query('companyName') companyName: string, @Query('referenceNumber') referenceNumber: string): Promise<string> {
         return this.userService.bpayPayment(username, accountNumber, billerCode, companyName, referenceNumber, amount);
     }
+
+
+    @Get(':username/getPayees')
+    async getPayees(@Query('username') username: string) {
+        return this.userService.getPayees(username);
+    }
     
+    @Post(':username/addPayee')
+    async addPayee(@Body() payeeDTO: payeeDTO) {
+        return this.userService.addPayee(payeeDTO);
+    }
 }
