@@ -11,7 +11,7 @@ export class BPAYHistory {
     @Prop({ required: true })
     amount: number;
 
-    @Prop({ required: true, unique: true })
+    @Prop({ required: true})
     billerCode: string; // Unique code for each BPAY company
 
     @Prop({ required: true })
