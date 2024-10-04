@@ -5,7 +5,7 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors({
-        origin: 'http://localhost:3000',
+        origin: ['https://fake-bank-front.vercel.app', 'http://localhost:3000'],
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         credentials: true,
     });
