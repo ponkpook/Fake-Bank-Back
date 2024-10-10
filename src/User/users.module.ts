@@ -7,6 +7,7 @@ import { UserController } from "./user.controller";
 import { transactionHistory, transactionHistorySchema } from "src/schemas/transactionHistory.schema";
 import { BPAYHistory, BPAYSchema } from "src/schemas/BPAY.schema";
 import { existingPayee, existingPayeeSchema } from "src/schemas/existingPayee.schema";
+import { RecurringPayment, RecurringPaymentSchema } from "src/schemas/recurringPayments.schema";
 @Module({
     imports: [
         MongooseModule.forFeature([
@@ -29,6 +30,10 @@ import { existingPayee, existingPayeeSchema } from "src/schemas/existingPayee.sc
         {
             name: existingPayee.name,
             schema: existingPayeeSchema
+        },         
+        {
+            name: RecurringPayment.name,
+            schema: RecurringPaymentSchema
         }
         ])
     ],

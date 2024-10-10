@@ -1,8 +1,10 @@
 import { Injectable, HttpException } from "@nestjs/common";
+import * as cron from 'node-cron';
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from 'mongoose'
+import { Model, NumberExpression } from 'mongoose'
 import { User } from 'src/schemas/user.schema'
 import { userAccount } from "src/schemas/userAccount.schema";
+import { RecurringPayment } from 'src/schemas/recurringPayments.schema';
 import { createUserDto } from "./dto/CreateUser.dto";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
@@ -18,8 +20,15 @@ export class UserService{
         @InjectModel(userAccount.name) private userAccountModel: Model<userAccount>,
         @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<userAccount>,
         @InjectModel(BPAYHistory.name) private BPAYHistory: Model<BPAYHistory>,
-        @InjectModel(existingPayee.name) private existingPayeeModel: Model<existingPayee>
-    ) { }
+        @InjectModel(existingPayee.name) private existingPayeeModel: Model<existingPayee>, 
+        @InjectModel(RecurringPayment.name) private recurringPaymentModel: Model<RecurringPayment>
+
+    ) { 
+        cron.schedule('0 0 * * *', () => this.processRecurringPayments());
+        cron.schedule('0 0 * * *', () => this.removeExpiredUsers());
+
+
+    }
 
     private bsbPool = [
         "000-001",
@@ -188,7 +197,7 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
     }
 
 
-    async checkUserExpirationStatus(username: string): Promise<string> {
+    async checkUserExpirationStatus(username: string): Promise<number> {
         // Fetch the user by username (excluding admins if needed)
         const user = await this.userModel.findOne({ username, isAdmin: false });
     
@@ -213,11 +222,11 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
     
         // If the user is expired
         if (daysLeft <= 0) {
-            return `User ${user.username} is expired.`;
+            return -1;
         }
     
         // If the user still has time left
-        return `User ${user.username} is active with ${daysLeft} days left until expiration.`;
+        return daysLeft;
     }
     
 
@@ -269,5 +278,93 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
             await newPayee.save();
             return { success: true, message: 'Payee added successfully' };
         }
+    }
+
+    // Method to add a new recurring payment
+    async addRecurringPayment(username: string, accountNumber: string, amount: number, startDate: Date, endDate: Date, frequency: string) {
+        const account = await this.userAccountModel.findOne({ accountNumber, username });
+        if (!account) {
+            throw new HttpException('Account not found', 404);
+        }
+
+        const newRecurringPayment = new this.recurringPaymentModel({
+            username,
+            accountNumber,
+            amount,
+            startDate,
+            endDate,
+            nextPaymentDate: startDate, // First payment will be made on the start date
+            frequency,
+        });
+
+        await newRecurringPayment.save();
+        return `Recurring payment added for user ${username} with account ${accountNumber}.`;
+    }
+
+    // Process recurring payments daily
+    async processRecurringPayments() {
+        const today = new Date();
+
+        // Fetch all recurring payments where the next payment date is today or earlier and end date is not exceeded
+        const payments = await this.recurringPaymentModel.find({
+            nextPaymentDate: { $lte: today },
+            endDate: { $gte: today }
+        });
+
+        for (const payment of payments) {
+            const account = await this.userAccountModel.findOne({ accountNumber: payment.accountNumber });
+            if (!account) {
+                console.log(`Account ${payment.accountNumber} not found, skipping payment.`);
+                continue;
+            }
+
+            // Check if the user has enough balance
+            if (account.balance < payment.amount) {
+                console.log(`Insufficient funds in account ${payment.accountNumber}, skipping payment.`);
+                continue;
+            }
+
+            // Deduct the amount from the user's account balance
+            account.balance -= payment.amount;
+            await account.save();
+
+            // Log the payment (also create a transaction record here)
+            console.log(`Processed recurring payment of ${payment.amount} for account ${payment.accountNumber}.`);
+
+            // Create a new transaction record for this recurring payment
+            const newTransaction = new this.transactionHistoryModel({
+                username: payment.username,
+                fromAccNumber: payment.accountNumber,
+                toAccNumber: "Recurring Payment",
+                amount: payment.amount,
+                date: new Date(),
+                time: new Date().toLocaleTimeString(),
+            });
+            await newTransaction.save();
+            // Calculate the next payment date based on the frequency and update the recurring payment
+            const nextPaymentDate = this.calculateNextPaymentDate(payment.nextPaymentDate, payment.frequency);
+            await this.recurringPaymentModel.updateOne(
+                { _id: payment._id },
+                { nextPaymentDate }
+            );
+        }
+    }
+
+    calculateNextPaymentDate(currentDate: Date, frequency: string): Date {
+        const nextDate = new Date(currentDate);
+        switch (frequency) {
+            case 'weekly':
+                nextDate.setDate(currentDate.getDate() + 7); // Weekly payment
+                break;
+            case 'fortnightly':
+                nextDate.setDate(currentDate.getDate() + 14); // Every two weeks
+                break;
+            case 'monthly':
+                nextDate.setMonth(currentDate.getMonth() + 1); // Monthly payment
+                break;
+            default:
+                throw new Error(`Unknown frequency: ${frequency}`);
+        }
+        return nextDate;
     }
 }

@@ -100,4 +100,26 @@ export class UserController {
     async addPayee(@Body() payeeDTO: payeeDTO) {
         return this.userService.addPayee(payeeDTO);
     }
+
+        // Add a new recurring payment
+    @Post(':username/recurring-payment')
+    @UsePipes(new ValidationPipe())
+    async addRecurringPayment(
+        @Param('username') username: string,
+        @Body('accountNumber') accountNumber: string,
+        @Body('amount') amount: number,
+        @Body('startDate') startDate: string,
+        @Body('endDate') endDate: string,
+        @Body('frequency') frequency: string
+    ) {
+        return this.userService.addRecurringPayment(
+            username,
+            accountNumber,
+            amount,
+            new Date(startDate),
+            new Date(endDate),
+            frequency
+        );
+    }
+
 }
