@@ -5,14 +5,11 @@ import { AppService } from './app.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { UserModule } from './User/users.module';
-import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot(), // 加载 .env 文件
-    MongooseModule.forRoot(process.env.MONGODB_URI), // 使用环境变量连接 MongoDB,
-    UserModule,
-  ],
+  //imports: [MongooseModule.forRoot('mongodb://127.0.0.1/nestjs'), 
+  imports: [MongooseModule.forRoot('mongodb+srv://itproject:comp30022@it-project.yjfna.mongodb.net/'), 
+    UserModule,],
   controllers: [AppController, AuthController],
   providers: [AppService, AuthService],
 })

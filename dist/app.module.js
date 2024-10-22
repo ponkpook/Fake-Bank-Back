@@ -14,17 +14,13 @@ const app_service_1 = require("./app.service");
 const auth_controller_1 = require("./auth/auth.controller");
 const auth_service_1 = require("./auth/auth.service");
 const users_module_1 = require("./User/users.module");
-const config_1 = require("@nestjs/config");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [
-            config_1.ConfigModule.forRoot(),
-            mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URI),
-            users_module_1.UserModule,
-        ],
+        imports: [mongoose_1.MongooseModule.forRoot('mongodb+srv://itproject:comp30022@it-project.yjfna.mongodb.net/'),
+            users_module_1.UserModule,],
         controllers: [app_controller_1.AppController, auth_controller_1.AuthController],
         providers: [app_service_1.AppService, auth_service_1.AuthService],
     })
