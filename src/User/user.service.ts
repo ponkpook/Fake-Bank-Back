@@ -9,6 +9,7 @@ import { TransferDto } from './dto/Transfer.dto';
 import { transactionHistory } from "../schemas/transactionHistory.schema";
 import { BPAYHistory } from "../schemas/BPAY.schema";
 import { existingPayee } from "../schemas/existingPayee.schema";
+import { RecurringPayment } from "../schemas/recurringPayments.schema";
 import { payeeDTO } from "./dto/existingPayee.dto";
 
 @Injectable()
@@ -18,7 +19,8 @@ export class UserService{
         @InjectModel(userAccount.name) private userAccountModel: Model<userAccount>,
         @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<userAccount>,
         @InjectModel(BPAYHistory.name) private BPAYHistory: Model<BPAYHistory>,
-        @InjectModel(existingPayee.name) private existingPayeeModel: Model<existingPayee>
+        @InjectModel(existingPayee.name) private existingPayeeModel: Model<existingPayee>, 
+        @InjectModel(RecurringPayment.name) private recurringPaymentModel: Model<RecurringPayment>
     ) { }
 
     private bsbPool = [
@@ -86,7 +88,7 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
         sender.balance -= amount;
         // Save both accounts
         await Promise.all([sender.save()]);
-        const record = ({
+        await this.transactionHistoryModel.create({
             username: sender.username,
             fromAccNumber: fromAccount,
             toAccNumber: toAccount,
@@ -94,8 +96,6 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
             date: new Date(),
             time: new Date().toLocaleTimeString()
         });
-        const newRecord = new this.transactionHistoryModel(record);
-        await newRecord.save();
         return 'Transfer successful';
     }
 
@@ -122,7 +122,8 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
         recipient.balance += amount;
         // Save both accounts
         await Promise.all([sender.save(), recipient.save()]);
-        const record = ({
+
+        await this.transactionHistoryModel.create({
             username: sender.username,
             fromAccNumber: fromAccount,
             toAccNumber: toAccount,
@@ -130,16 +131,13 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
             date: new Date(),
             time: new Date().toLocaleTimeString()
         });
-        const newRecord = new this.transactionHistoryModel(record);
-        await newRecord.save();
+
         return 'Transfer successful';
     }
 
     async getUserTransactions(username: string) {
         const transactions = await this.transactionHistoryModel.find({ username }).exec();
-        const BPAYtransactions = await this.BPAYHistory.find({ username }).exec();
-        const allTransactions = [...transactions, ...BPAYtransactions];
-        return allTransactions;
+        return transactions;
     }
 
     async deposit(username: string, accountNumber: string, amount: number) {
@@ -171,8 +169,7 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
         sender.balance -= amount;
         await sender.save();
     
-        // Create a BPAY transaction record
-        const newTransaction = new this.BPAYHistory({
+        await this.BPAYHistory.create({
             username,
             fromAccNumber,
             billerCode,
@@ -182,8 +179,16 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
             date: new Date(),
             time: new Date().toLocaleTimeString()
         });
-        await newTransaction.save();
-    
+
+        await this.transactionHistoryModel.create({
+            username,
+            fromAccNumber,
+            toAccNumber: companyName,
+            amount: amount,
+            date: new Date(),
+            time: new Date().toLocaleTimeString()
+        });
+
         return `BPAY payment to ${companyName} successful`;
     }
 
@@ -250,10 +255,10 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
     }
     
     getUserAccounts(username: string){
-        return this.userAccountModel.find({username}).exec();
+        return this.userAccountModel.find({username});
     }
     getUserAccount(username: string, accountNumber: string) {
-        return this.userAccountModel.findOne({ username, accountNumber }).exec();
+        return this.userAccountModel.findOne({ username, accountNumber });
     }
 
     async getPayees(username: string): Promise<payeeDTO[]> {
@@ -269,5 +274,92 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
             await newPayee.save();
             return { success: true, message: 'Payee added successfully' };
         }
+    }
+        // Method to add a new recurring payment
+    async addRecurringPayment(username: string, accountNumber: string, amount: number, startDate: Date, endDate: Date, frequency: string) {
+        const account = await this.userAccountModel.findOne({ accountNumber, username });
+        if (!account) {
+            throw new HttpException('Account not found', 404);
+        }
+
+        const newRecurringPayment = new this.recurringPaymentModel({
+            username,
+            accountNumber,
+            amount,
+            startDate,
+            endDate,
+            nextPaymentDate: startDate, // First payment will be made on the start date
+            frequency,
+        });
+
+        await newRecurringPayment.save();
+        return `Recurring payment added for user ${username} with account ${accountNumber}.`;
+    }
+
+    // Process recurring payments daily
+    async processRecurringPayments() {
+        const today = new Date();
+
+        // Fetch all recurring payments where the next payment date is today or earlier and end date is not exceeded
+        const payments = await this.recurringPaymentModel.find({
+            nextPaymentDate: { $lte: today },
+            endDate: { $gte: today }
+        });
+
+        for (const payment of payments) {
+            const account = await this.userAccountModel.findOne({ accountNumber: payment.accountNumber });
+            if (!account) {
+                console.log(`Account ${payment.accountNumber} not found, skipping payment.`);
+                continue;
+            }
+
+            // Check if the user has enough balance
+            if (account.balance < payment.amount) {
+                console.log(`Insufficient funds in account ${payment.accountNumber}, skipping payment.`);
+                continue;
+            }
+
+            // Deduct the amount from the user's account balance
+            account.balance -= payment.amount;
+            await account.save();
+
+            // Log the payment (also create a transaction record here)
+            console.log(`Processed recurring payment of ${payment.amount} for account ${payment.accountNumber}.`);
+
+            // Create a new transaction record for this recurring payment
+            await this.transactionHistoryModel.create({
+                username: payment.username,
+                fromAccNumber: payment.accountNumber,
+                toAccNumber: "Recurring Payment",
+                amount: payment.amount,
+                date: new Date(),
+                time: new Date().toLocaleTimeString(),
+            });
+
+            // Calculate the next payment date based on the frequency and update the recurring payment
+            const nextPaymentDate = this.calculateNextPaymentDate(payment.nextPaymentDate, payment.frequency);
+            await this.recurringPaymentModel.updateOne(
+                { _id: payment._id },
+                { nextPaymentDate }
+            );
+        }
+    }
+
+    calculateNextPaymentDate(currentDate: Date, frequency: string): Date {
+        const nextDate = new Date(currentDate);
+        switch (frequency) {
+            case 'weekly':
+                nextDate.setDate(currentDate.getDate() + 7); // Weekly payment
+                break;
+            case 'fortnightly':
+                nextDate.setDate(currentDate.getDate() + 14); // Every two weeks
+                break;
+            case 'monthly':
+                nextDate.setMonth(currentDate.getMonth() + 1); // Monthly payment
+                break;
+            default:
+                throw new Error(`Unknown frequency: ${frequency}`);
+        }
+        return nextDate;
     }
 }
