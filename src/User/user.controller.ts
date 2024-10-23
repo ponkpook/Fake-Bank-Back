@@ -86,7 +86,7 @@ export class UserController {
 
     @Post(':username/BPAY')
     @UsePipes(new ValidationPipe())
-    async bpayPayment(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number, @Query('billerCode') billerCode: string, @Query('companyName') companyName: string, @Query('referenceNumber') referenceNumber: string): Promise<string> {
+    async bpayPayment(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number, @Query('billerCode') billerCode: string, @Query('companyName') companyName: string, @Query('referenceNumber') referenceNumber: string): Promise<{success:boolean, message: string}> {
         return this.userService.bpayPayment(username, accountNumber, billerCode, companyName, referenceNumber, amount);
     }
 

@@ -11,7 +11,6 @@ import { TransferDto } from './dto/Transfer.dto';
 import { transactionHistory } from "../schemas/transactionHistory.schema";
 import { BPAYHistory } from "../schemas/BPAY.schema";
 import { existingPayee } from "../schemas/existingPayee.schema";
-import { RecurringPayment } from "../schemas/recurringPayments.schema";
 import { payeeDTO } from "./dto/existingPayee.dto";
 
 @Injectable()
@@ -103,8 +102,6 @@ export class UserService{
             date: new Date(),
             time: new Date().toLocaleTimeString()
         });
-        const newRecord = new this.transactionHistoryModel(record);
-        await newRecord.save();
         return { success: true, message: 'Transfer successful' };
     }
 
@@ -140,8 +137,6 @@ export class UserService{
             date: new Date(),
             time: new Date().toLocaleTimeString()
         });
-        const newRecord = new this.transactionHistoryModel(record);
-        await newRecord.save();
         return { success: true, message: 'Transfer successful' };
     }
 
@@ -158,21 +153,21 @@ export class UserService{
     }
 
 
-    async bpayPayment(username: String,fromAccNumber:String, billerCode:String, companyName:String, referenceNumber:String, amount:number): Promise<string> {
+    async bpayPayment(username: String, fromAccNumber: String, billerCode: String, companyName: String, referenceNumber: String, amount: number): Promise<{success:boolean, message: string}> {
         if (amount <= 0) {
-            throw new HttpException('Payment amount must be greater than zero', 400);
+            return { success: false, message: 'Payment amount must be greater than zero' };
         }
     
         // Fetch the user's account
         const sender = await this.userAccountModel.findOne({ accountNumber: fromAccNumber });
         if (!sender) {
-            throw new HttpException('Sender account not found', 404);
+            return { success: false, message: 'Account not found' };
         }
     
     
         // Check if the sender has sufficient funds
         if (sender.balance < amount) {
-            throw new HttpException('Insufficient funds', 400);
+            return { success: false, message: 'Insufficient funds' };
         }
     
         // Deduct the amount from the user's account
@@ -199,7 +194,7 @@ export class UserService{
             time: new Date().toLocaleTimeString()
         });
 
-        return `BPAY payment to ${companyName} successful`;
+        return { success: true, message: 'BPAY payment successful' };
     }
 
 
