@@ -79,18 +79,18 @@ export class UserService{
 
 
 // transfer to others does not require a existing bsb and account number
-async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
+    async transferMoneyToOthers(transferDto: TransferDto): Promise<{success: boolean, message:string}> {
         const { fromAccount, toAccount, amount } = transferDto;
         if (amount <= 0) {
-            throw new HttpException('Transfer amount must be greater than zero', 400);
+            return { success: false, message: 'Transfer amount must be greater than zero' };
         }
         const sender = await this.userAccountModel.findOne({ accountNumber: fromAccount });
         if (!sender) {
-            throw new HttpException('Sender account not found', 404);
+            return { success: false, message: 'Sender account not found' };
         }
         const recipient = await this.userAccountModel.findOne({ accountNumber: toAccount });
         if (sender.balance < amount) {
-            throw new HttpException('Insufficient funds', 400);
+            return { success: false, message: 'Insufficient funds' };
         }
         sender.balance -= amount;
         // Save both accounts
@@ -105,27 +105,27 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
         });
         const newRecord = new this.transactionHistoryModel(record);
         await newRecord.save();
-        return 'Transfer successful';
+        return { success: true, message: 'Transfer successful' };
     }
 
 
 
 
-    async transferMoney(transferDto: TransferDto): Promise<string> {
+    async transferMoney(transferDto: TransferDto): Promise<{ success: boolean; message: string }> {
         const { fromAccount, toAccount, amount } = transferDto;
         if (amount <= 0) {
-            throw new HttpException('Transfer amount must be greater than zero', 400);
+            return { success: false, message: 'Transfer amount must be greater than zero' };
         }
         const sender = await this.userAccountModel.findOne({ accountNumber: fromAccount });
         if (!sender) {
-            throw new HttpException('Sender account not found', 404);
+            return { success: false, message: 'Sender account not found' };
         }
         const recipient = await this.userAccountModel.findOne({ accountNumber: toAccount });
         if (!recipient) {
-            throw new HttpException('Recipient account not found', 404);
+            return { success: false, message: 'Recipient account not found' };
         }
         if (sender.balance < amount) {
-            throw new HttpException('Insufficient funds', 400);
+            return { success: false, message: 'Insufficient funds' };
         }
         sender.balance -= amount;
         recipient.balance += amount;
@@ -141,7 +141,7 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
         });
         const newRecord = new this.transactionHistoryModel(record);
         await newRecord.save();
-        return 'Transfer successful';
+        return { success: true, message: 'Transfer successful' };
     }
 
     async getUserTransactions(username: string) {
