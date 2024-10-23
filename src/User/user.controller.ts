@@ -101,7 +101,8 @@ export class UserController {
         return this.userService.addPayee(payeeDTO);
     }
 
-        // Add a new recurring payment
+
+            // Add a new recurring payment
     @Post(':username/recurring-payment')
     @UsePipes(new ValidationPipe())
     async addRecurringPayment(
@@ -121,5 +122,4 @@ export class UserController {
             frequency
         );
     }
-
 }

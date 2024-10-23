@@ -11,6 +11,7 @@ import { TransferDto } from './dto/Transfer.dto';
 import { transactionHistory } from "../schemas/transactionHistory.schema";
 import { BPAYHistory } from "../schemas/BPAY.schema";
 import { existingPayee } from "../schemas/existingPayee.schema";
+import { RecurringPayment } from "../schemas/recurringPayments.schema";
 import { payeeDTO } from "./dto/existingPayee.dto";
 
 @Injectable()
@@ -24,7 +25,6 @@ export class UserService{
         @InjectModel(RecurringPayment.name) private recurringPaymentModel: Model<RecurringPayment>
 
     ) { 
-        cron.schedule('0 0 * * *', () => this.processRecurringPayments());
         cron.schedule('0 0 * * *', () => this.removeExpiredUsers());
 
 
@@ -95,7 +95,7 @@ export class UserService{
         sender.balance -= amount;
         // Save both accounts
         await Promise.all([sender.save()]);
-        const record = ({
+        await this.transactionHistoryModel.create({
             username: sender.username,
             fromAccNumber: fromAccount,
             toAccNumber: toAccount,
@@ -131,7 +131,8 @@ export class UserService{
         recipient.balance += amount;
         // Save both accounts
         await Promise.all([sender.save(), recipient.save()]);
-        const record = ({
+
+        await this.transactionHistoryModel.create({
             username: sender.username,
             fromAccNumber: fromAccount,
             toAccNumber: toAccount,
@@ -146,9 +147,7 @@ export class UserService{
 
     async getUserTransactions(username: string) {
         const transactions = await this.transactionHistoryModel.find({ username }).exec();
-        const BPAYtransactions = await this.BPAYHistory.find({ username }).exec();
-        const allTransactions = [...transactions, ...BPAYtransactions];
-        return allTransactions;
+        return transactions;
     }
 
     async deposit(username: string, accountNumber: string, amount: number) {
@@ -180,8 +179,7 @@ export class UserService{
         sender.balance -= amount;
         await sender.save();
     
-        // Create a BPAY transaction record
-        const newTransaction = new this.BPAYHistory({
+        await this.BPAYHistory.create({
             username,
             fromAccNumber,
             billerCode,
@@ -191,8 +189,16 @@ export class UserService{
             date: new Date(),
             time: new Date().toLocaleTimeString()
         });
-        await newTransaction.save();
-    
+
+        await this.transactionHistoryModel.create({
+            username,
+            fromAccNumber,
+            toAccNumber: companyName,
+            amount: amount,
+            date: new Date(),
+            time: new Date().toLocaleTimeString()
+        });
+
         return `BPAY payment to ${companyName} successful`;
     }
 
@@ -259,10 +265,10 @@ export class UserService{
     }
     
     getUserAccounts(username: string){
-        return this.userAccountModel.find({username}).exec();
+        return this.userAccountModel.find({username});
     }
     getUserAccount(username: string, accountNumber: string) {
-        return this.userAccountModel.findOne({ username, accountNumber }).exec();
+        return this.userAccountModel.findOne({ username, accountNumber });
     }
 
     async getPayees(username: string): Promise<payeeDTO[]> {
@@ -279,8 +285,7 @@ export class UserService{
             return { success: true, message: 'Payee added successfully' };
         }
     }
-
-    // Method to add a new recurring payment
+        // Method to add a new recurring payment
     async addRecurringPayment(username: string, accountNumber: string, amount: number, startDate: Date, endDate: Date, frequency: string) {
         const account = await this.userAccountModel.findOne({ accountNumber, username });
         if (!account) {
@@ -332,7 +337,7 @@ export class UserService{
             console.log(`Processed recurring payment of ${payment.amount} for account ${payment.accountNumber}.`);
 
             // Create a new transaction record for this recurring payment
-            const newTransaction = new this.transactionHistoryModel({
+            await this.transactionHistoryModel.create({
                 username: payment.username,
                 fromAccNumber: payment.accountNumber,
                 toAccNumber: "Recurring Payment",
@@ -340,7 +345,7 @@ export class UserService{
                 date: new Date(),
                 time: new Date().toLocaleTimeString(),
             });
-            await newTransaction.save();
+
             // Calculate the next payment date based on the frequency and update the recurring payment
             const nextPaymentDate = this.calculateNextPaymentDate(payment.nextPaymentDate, payment.frequency);
             await this.recurringPaymentModel.updateOne(

@@ -26,4 +26,3 @@ export class RecurringPayment extends Document {
 }
 
 export const RecurringPaymentSchema = SchemaFactory.createForClass(RecurringPayment);
-
