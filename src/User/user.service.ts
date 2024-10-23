@@ -2,15 +2,15 @@ import { Injectable, HttpException } from "@nestjs/common";
 import * as cron from 'node-cron';
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, NumberExpression } from 'mongoose'
-import { User } from 'src/schemas/user.schema'
-import { userAccount } from "src/schemas/userAccount.schema";
+import { User } from '../schemas/user.schema'
+import { userAccount } from "../schemas/userAccount.schema";
 import { RecurringPayment } from 'src/schemas/recurringPayments.schema';
 import { createUserDto } from "./dto/CreateUser.dto";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
-import { transactionHistory } from "src/schemas/transactionHistory.schema";
-import { BPAYHistory } from "src/schemas/BPAY.schema";
-import { existingPayee } from "src/schemas/existingPayee.schema";
+import { transactionHistory } from "../schemas/transactionHistory.schema";
+import { BPAYHistory } from "../schemas/BPAY.schema";
+import { existingPayee } from "../schemas/existingPayee.schema";
 import { payeeDTO } from "./dto/existingPayee.dto";
 
 @Injectable()
