@@ -122,7 +122,7 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
         recipient.balance += amount;
         // Save both accounts
         await Promise.all([sender.save(), recipient.save()]);
-        
+
         await this.transactionHistoryModel.create({
             username: sender.username,
             fromAccNumber: fromAccount,
@@ -137,9 +137,7 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
 
     async getUserTransactions(username: string) {
         const transactions = await this.transactionHistoryModel.find({ username }).exec();
-        const BPAYtransactions = await this.BPAYHistory.find({ username }).exec();
-        const allTransactions = [...transactions, ...BPAYtransactions];
-        return allTransactions;
+        return transactions;
     }
 
     async deposit(username: string, accountNumber: string, amount: number) {
@@ -171,7 +169,6 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
         sender.balance -= amount;
         await sender.save();
     
-        // Create a BPAY transaction record
         await this.BPAYHistory.create({
             username,
             fromAccNumber,
@@ -179,6 +176,15 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
             companyName,
             referenceNumber,
             amount,
+            date: new Date(),
+            time: new Date().toLocaleTimeString()
+        });
+
+        await this.transactionHistoryModel.create({
+            username,
+            fromAccNumber,
+            toAccNumber: companyName,
+            amount: amount,
             date: new Date(),
             time: new Date().toLocaleTimeString()
         });
@@ -249,10 +255,10 @@ async transferMoneyToOthers(transferDto: TransferDto): Promise<string> {
     }
     
     getUserAccounts(username: string){
-        return this.userAccountModel.find({username}).exec();
+        return this.userAccountModel.find({username});
     }
     getUserAccount(username: string, accountNumber: string) {
-        return this.userAccountModel.findOne({ username, accountNumber }).exec();
+        return this.userAccountModel.findOne({ username, accountNumber });
     }
 
     async getPayees(username: string): Promise<payeeDTO[]> {

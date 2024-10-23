@@ -20,6 +20,7 @@ describe('UserService', () => {
   let transactionHistoryModel: Model<transactionHistory>;
   let BPAYHistoryModel: Model<BPAYHistory>;
   let existingPayeeModel: Model<existingPayee>;
+  let recurringPaymentModel: Model<RecurringPayment>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -37,7 +38,10 @@ describe('UserService', () => {
           provide: getModelToken(userAccount.name),
           useValue: {
             findOne: jest.fn(),
-            save: jest.fn(),
+            save: jest.fn(),      // Mock the `save` method here (though it will be added to the result of `findOne`)
+            find: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue([]), // Properly mock `exec()` method
+              }),
           },
         },
         // Mock transactionHistoryModel
@@ -45,6 +49,9 @@ describe('UserService', () => {
           provide: getModelToken(transactionHistory.name),
           useValue: {
             create: jest.fn(), // Mock the create method correctly
+            find: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue([]), // Properly mock `exec()` method
+              }),
           },
         },
         // Mock BPAYHistoryModel
@@ -52,6 +59,9 @@ describe('UserService', () => {
           provide: getModelToken(BPAYHistory.name),
           useValue: {
             create: jest.fn(),
+            find: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue([]), // Properly mock `exec()` method
+              }),
           },
         },
         // Mock existingPayeeModel
@@ -63,6 +73,8 @@ describe('UserService', () => {
           provide: getModelToken(RecurringPayment.name), 
           useValue: {
             create: jest.fn(),
+            find: jest.fn(), // Add this to mock the `find` method
+            updateOne: jest.fn(),
             },
         },
       ],
@@ -74,6 +86,8 @@ describe('UserService', () => {
     transactionHistoryModel = module.get<Model<transactionHistory>>(getModelToken(transactionHistory.name));
     BPAYHistoryModel = module.get<Model<BPAYHistory>>(getModelToken(BPAYHistory.name));
     existingPayeeModel = module.get<Model<existingPayee>>(getModelToken(existingPayee.name));
+    recurringPaymentModel = module.get<Model<RecurringPayment>>(getModelToken(RecurringPayment.name));
+
   });
 
   afterEach(() => {
@@ -299,4 +313,80 @@ describe('UserService', () => {
     });
   });
   
+
+  describe('getUserTransactions', () => {
+    it('should return an empty array if no transactions are found', async () => {
+      const username = 'testUser';
+  
+      // Mock `find()` and `exec()` to return an empty array
+      (transactionHistoryModel.find as jest.Mock).mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      });
+  
+      const result = await service.getUserTransactions(username);
+  
+      expect(result).toEqual([]);
+      expect(transactionHistoryModel.find).toHaveBeenCalledWith({ username });
+    });
+  
+    it('should retrieve all transactions for the user', async () => {
+      const username = 'testUser';
+  
+      const transactions = [
+        {
+          username: 'testUser',
+          fromAccNumber: '1234567',
+          toAccNumber: '7654321',
+          amount: 100,
+          date: new Date('2021-01-01T10:00:00Z'),
+          time: '10:00:00 AM',
+        },
+        {
+          username: 'testUser',
+          fromAccNumber: '1234567',
+          toAccNumber: '7654322',
+          amount: 150,
+          date: new Date('2021-01-02T12:00:00Z'),
+          time: '12:00:00 PM',
+        },
+      ];
+  
+      // Mock `find()` and `exec()` to return transactions
+      (transactionHistoryModel.find as jest.Mock).mockReturnValue({
+        exec: jest.fn().mockResolvedValue(transactions),
+      });
+  
+      const result = await service.getUserTransactions(username);
+  
+      expect(result).toHaveLength(2);
+      expect(result).toEqual(transactions);
+      expect(transactionHistoryModel.find).toHaveBeenCalledWith({ username });
+    });
+  });
+  
+  
+  describe('deposit', () => {
+    it('should deposit the correct amount into the user\'s account', async () => {
+      const username = 'testUser';
+      const accountNumber = '1234567';
+      const depositAmount = 100;
+  
+      const userAccount = {
+        accountNumber: '1234567',
+        balance: 200,
+        save: jest.fn().mockResolvedValue(true),  // Mock save function to simulate Mongoose behavior
+      };
+  
+      // Mock userAccountModel.findOne to return the user account
+      (userAccountModel.findOne as jest.Mock).mockResolvedValue(userAccount);
+  
+      // Call the deposit function
+      await service.deposit(username, accountNumber, depositAmount);
+  
+      // Ensure that the deposit is correctly added to the balance
+      expect(userAccount.balance).toBe(300); // 200 + 100 deposit
+      expect(userAccount.save).toHaveBeenCalled(); // Ensure the account was saved with the new balance
+    });
+  });  
+
 });
