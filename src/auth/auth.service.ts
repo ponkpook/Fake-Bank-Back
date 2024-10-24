@@ -6,35 +6,29 @@ export class AuthService {
 
     constructor(private readonly userService: UserService) {}
 
-    public async validate(username: string, password: string): Promise<boolean> {
+    public async validate(username: string, password: string): Promise<{success: boolean, message: string}> {
         const user = await this.userService.getUser(username); 
         if (user == null) {
-            return false;
+            return {success: false, message: 'User not found'};
         }
         if (user.password === password) {
-            return true;
+            return {success: true, message: 'Login successful'};
+        } else {
+            return {success: false, message: 'Incorrect password'};
         }
-        return false;
     }
 
-    public async register(username: string, password: string, confirmPassword: string): Promise<{msg:String, success:Boolean}> {
-        if (username == "" || password == "" || confirmPassword == ""
-            || username == null || password == null || confirmPassword == null
+    public async register(username: string, password: string): Promise<{success:Boolean, message: string}> {
+        if (username == "" || password == ""
+            || username == null || password == null
         ){
-            return {msg:'Please fill out all fields', success:false};
+            return {message:'Please fill out all fields', success:false};
         }
-
-        if (password !== confirmPassword) {
-            return {msg:'Passwords do not match', success:false};   
-        }
-
         const user = await this.userService.getUser(username);
         if (user != null) {
-            return {msg: 'Username already exists', success:false};
-        }
-            
+            return {message: 'Username already exists', success:false};
+        }  
         var isAdmin = false;
-
         if (username == "admin1" || username == "admin2" || username == "admin3") {
             isAdmin = true;
         }
@@ -47,7 +41,6 @@ export class AuthService {
             }
         );
         this.userService.createDefaultAcc(username);
-
-        return { msg: 'User created', success: true };
+        return {message: 'User created', success: true };
     }
 }

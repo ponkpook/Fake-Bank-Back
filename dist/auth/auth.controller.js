@@ -23,12 +23,10 @@ let AuthController = class AuthController {
         return 'login!';
     }
     async validate(username, password) {
-        const isValid = await this.authService.validate(username, password);
-        return { success: isValid };
+        return this.authService.validate(username, password);
     }
-    register(username, password) {
-        const confirmPassword = password;
-        return this.authService.register(username, password, confirmPassword);
+    async register(username, password) {
+        return this.authService.register(username, password);
     }
 };
 exports.AuthController = AuthController;

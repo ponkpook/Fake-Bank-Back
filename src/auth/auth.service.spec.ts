@@ -38,7 +38,7 @@ describe('AuthService', () => {
 
     jest.spyOn(userService, 'getUser').mockResolvedValue(mockUser as Document<unknown, {}, User> & User & { _id: Types.ObjectId });
 
-    const result = await authService.register('existingUser', 'password', 'password');
+    const result = await authService.register('existingUser', 'password');
 
     expect(result).toEqual({ msg: 'Username already exists', success: false });
   });
@@ -48,7 +48,7 @@ describe('AuthService', () => {
     jest.spyOn(userService, 'createUser').mockResolvedValue(null);
     jest.spyOn(userService, 'createDefaultAcc').mockResolvedValue(null);
 
-    const result = await authService.register('newUser', 'password', 'password');
+    const result = await authService.register('newUser', 'password');
 
     expect(userService.createUser).toHaveBeenCalledWith({
       username: 'newUser',
@@ -65,7 +65,7 @@ describe('AuthService', () => {
     jest.spyOn(userService, 'createUser').mockResolvedValue(null);
     jest.spyOn(userService, 'createDefaultAcc').mockResolvedValue(null);
 
-    const result = await authService.register('admin1', 'password', 'password');
+    const result = await authService.register('admin1', 'password');
 
     expect(userService.createUser).toHaveBeenCalledWith({
       username: 'admin1',

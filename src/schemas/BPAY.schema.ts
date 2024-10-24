@@ -6,7 +6,7 @@ export class BPAYHistory {
     username: string;
 
     @Prop({required: true})
-    fromAccNumber: string;
+    fromAccount: string;
 
     @Prop({ required: true })
     amount: number;

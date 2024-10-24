@@ -38,10 +38,8 @@ export class UserController {
     }
 
     @Get(':username/transactions')
-    async getUserAccount(@Param('username') username: string, @Param('accountNumber') accountNumber: string) {
-        const transactions = await this.userService.getUserTransactions(username);
-        if (!transactions) throw new HttpException('User not found', 404);
-        return transactions;
+    async getUserAccount(@Query('username') username: string) {
+        return this.userService.getUserTransactions(username);
     }
 
     @Post(':username/newAccount')
@@ -86,8 +84,8 @@ export class UserController {
 
     @Post(':username/BPAY')
     @UsePipes(new ValidationPipe())
-    async bpayPayment(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number, @Query('billerCode') billerCode: string, @Query('companyName') companyName: string, @Query('referenceNumber') referenceNumber: string): Promise<string> {
-        return this.userService.bpayPayment(username, accountNumber, billerCode, companyName, referenceNumber, amount);
+    async bpayPayment(@Query('username') username: string, @Query('accountName') accountName: string, @Query('amount') amount: number, @Query('billerCode') billerCode: string, @Query('companyName') companyName: string, @Query('referenceNumber') referenceNumber: string): Promise<{success:boolean, message: string}> {
+        return this.userService.bpayPayment(username, accountName, billerCode, companyName, referenceNumber, amount);
     }
 
 
@@ -107,7 +105,7 @@ export class UserController {
     @UsePipes(new ValidationPipe())
     async addRecurringPayment(
         @Param('username') username: string,
-        @Body('accountNumber') accountNumber: string,
+        @Body('accountName') accountName: string,
         @Body('amount') amount: number,
         @Body('startDate') startDate: string,
         @Body('endDate') endDate: string,
@@ -115,7 +113,7 @@ export class UserController {
     ) {
         return this.userService.addRecurringPayment(
             username,
-            accountNumber,
+            accountName,
             amount,
             new Date(startDate),
             new Date(endDate),
