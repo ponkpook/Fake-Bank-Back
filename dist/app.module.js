@@ -19,7 +19,7 @@ let AppModule = class AppModule {
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forRoot('mongodb://127.0.0.1/nestjs'),
+        imports: [mongoose_1.MongooseModule.forRoot('mongodb://localhost:27017/test_db'),
             users_module_1.UserModule,],
         controllers: [app_controller_1.AppController, auth_controller_1.AuthController],
         providers: [app_service_1.AppService, auth_service_1.AuthService],
