@@ -4,7 +4,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model, NumberExpression } from 'mongoose'
 import { User } from '../schemas/user.schema'
 import { userAccount } from "../schemas/userAccount.schema";
-import { RecurringPayment } from 'src/schemas/recurringPayments.schema';
+import { RecurringPayment } from '../schemas/recurringPayments.schema';
 import { createUserDto } from "./dto/CreateUser.dto";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
@@ -18,14 +18,14 @@ export class UserService{
     constructor(
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(userAccount.name) private userAccountModel: Model<userAccount>,
-        @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<userAccount>,
+        @InjectModel(transactionHistory.name) private transactionHistoryModel: Model<transactionHistory>,
         @InjectModel(BPAYHistory.name) private BPAYHistory: Model<BPAYHistory>,
         @InjectModel(existingPayee.name) private existingPayeeModel: Model<existingPayee>, 
         @InjectModel(RecurringPayment.name) private recurringPaymentModel: Model<RecurringPayment>
 
     ) { 
+        cron.schedule('0 0 * * *', () => this.processRecurringPayments());
         cron.schedule('0 0 * * *', () => this.removeExpiredUsers());
-
 
     }
 
@@ -121,7 +121,11 @@ export class UserService{
         if (!recipient) {
             return { success: false, message: 'Recipient account not found' };
         }
-        if (sender.balance < amount) {
+        const senderBalance = Number(sender.balance);
+        const transferAmount = Number(amount);
+    
+        // Check if sender has sufficient funds
+        if (senderBalance < transferAmount) {
             return { success: false, message: 'Insufficient funds' };
         }
         sender.balance -= amount;
@@ -145,12 +149,15 @@ export class UserService{
         return transactions;
     }
 
-    async deposit(username: string, accountNumber: string, amount: number) {
+    async deposit(username: string, accountNumber: string, amount: number): Promise<[boolean, string]> {
         const account = await this.getUserAccount(username, accountNumber);
-        account.balance = Number(account.balance)+Number(amount);
+        if (!account) {
+            return [false, 'User account not found'];
+        }
+        account.balance = Number(account.balance) + Number(amount);
         await account.save();
-        return;
-    }
+        return [true, 'Deposit successful'];
+    }    
 
 
     async bpayPayment(username: String, fromAccNumber: String, billerCode: String, companyName: String, referenceNumber: String, amount: number): Promise<{success:boolean, message: string}> {
@@ -281,10 +288,10 @@ export class UserService{
         }
     }
         // Method to add a new recurring payment
-    async addRecurringPayment(username: string, accountNumber: string, amount: number, startDate: Date, endDate: Date, frequency: string) {
+    async addRecurringPayment(username: string, accountNumber: string, amount: number, startDate: Date, endDate: Date, frequency: string): Promise<{ success: boolean, message:string }>  {
         const account = await this.userAccountModel.findOne({ accountNumber, username });
         if (!account) {
-            throw new HttpException('Account not found', 404);
+            return { success: false, message: 'Account number or BSB does not exist' };
         }
 
         const newRecurringPayment = new this.recurringPaymentModel({
@@ -298,7 +305,7 @@ export class UserService{
         });
 
         await newRecurringPayment.save();
-        return `Recurring payment added for user ${username} with account ${accountNumber}.`;
+        return { success: true, message: '`Recurring payment added for user' };
     }
 
     // Process recurring payments daily
