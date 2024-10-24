@@ -19,24 +19,23 @@ let AuthService = class AuthService {
     async validate(username, password) {
         const user = await this.userService.getUser(username);
         if (user == null) {
-            return false;
+            return { success: false, message: 'User not found' };
         }
         if (user.password === password) {
-            return true;
+            return { success: true, message: 'Login successful' };
         }
-        return false;
+        else {
+            return { success: false, message: 'Incorrect password' };
+        }
     }
-    async register(username, password, confirmPassword) {
-        if (username == "" || password == "" || confirmPassword == ""
-            || username == null || password == null || confirmPassword == null) {
-            return { msg: 'Please fill out all fields', success: false };
-        }
-        if (password !== confirmPassword) {
-            return { msg: 'Passwords do not match', success: false };
+    async register(username, password) {
+        if (username == "" || password == ""
+            || username == null || password == null) {
+            return { message: 'Please fill out all fields', success: false };
         }
         const user = await this.userService.getUser(username);
         if (user != null) {
-            return { msg: 'Username already exists', success: false };
+            return { message: 'Username already exists', success: false };
         }
         var isAdmin = false;
         if (username == "admin1" || username == "admin2" || username == "admin3") {
@@ -49,7 +48,7 @@ let AuthService = class AuthService {
             date: new Date()
         });
         this.userService.createDefaultAcc(username);
-        return { msg: 'User created', success: true };
+        return { message: 'User created', success: true };
     }
 };
 exports.AuthService = AuthService;
