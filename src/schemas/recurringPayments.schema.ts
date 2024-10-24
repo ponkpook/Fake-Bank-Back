@@ -7,7 +7,7 @@ export class RecurringPayment extends Document {
     username: string;
 
     @Prop({ required: true })
-    accountNumber: string; // The account number to debit
+    accountName: string; // The account number to debit
 
     @Prop({ required: true })
     amount: number; // The amount to debit
