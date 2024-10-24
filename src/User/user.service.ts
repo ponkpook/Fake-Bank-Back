@@ -83,11 +83,10 @@ export class UserService{
         if (amount <= 0) {
             return { success: false, message: 'Transfer amount must be greater than zero' };
         }
-        const sender = await this.userAccountModel.findOne({ accountNumber: fromAccount });
+        const sender = await this.userAccountModel.findOne({ accountName: fromAccount });
         if (!sender) {
             return { success: false, message: 'Sender account not found' };
         }
-        const recipient = await this.userAccountModel.findOne({ accountNumber: toAccount });
         if (sender.balance < amount) {
             return { success: false, message: 'Insufficient funds' };
         }
@@ -96,8 +95,8 @@ export class UserService{
         await Promise.all([sender.save()]);
         await this.transactionHistoryModel.create({
             username: sender.username,
-            fromAccNumber: fromAccount,
-            toAccNumber: toAccount,
+            fromAccount: fromAccount,
+            toAccount: toAccount,
             amount: amount,
             date: new Date(),
             time: new Date().toLocaleTimeString()
@@ -113,11 +112,11 @@ export class UserService{
         if (amount <= 0) {
             return { success: false, message: 'Transfer amount must be greater than zero' };
         }
-        const sender = await this.userAccountModel.findOne({ accountNumber: fromAccount });
+        const sender = await this.userAccountModel.findOne({ accountName: fromAccount });
         if (!sender) {
             return { success: false, message: 'Sender account not found' };
         }
-        const recipient = await this.userAccountModel.findOne({ accountNumber: toAccount });
+        const recipient = await this.userAccountModel.findOne({ accountName: toAccount });
         if (!recipient) {
             return { success: false, message: 'Recipient account not found' };
         }
@@ -131,8 +130,8 @@ export class UserService{
 
         await this.transactionHistoryModel.create({
             username: sender.username,
-            fromAccNumber: fromAccount,
-            toAccNumber: toAccount,
+            fromAccount: fromAccount,
+            toAccount: toAccount,
             amount: amount,
             date: new Date(),
             time: new Date().toLocaleTimeString()
@@ -153,13 +152,13 @@ export class UserService{
     }
 
 
-    async bpayPayment(username: String, fromAccNumber: String, billerCode: String, companyName: String, referenceNumber: String, amount: number): Promise<{success:boolean, message: string}> {
+    async bpayPayment(username: String, accountName: String, billerCode: String, companyName: String, referenceNumber: String, amount: number): Promise<{success:boolean, message: string}> {
         if (amount <= 0) {
             return { success: false, message: 'Payment amount must be greater than zero' };
         }
     
         // Fetch the user's account
-        const sender = await this.userAccountModel.findOne({ accountNumber: fromAccNumber });
+        const sender = await this.userAccountModel.findOne({ username:username, accountName:accountName});
         if (!sender) {
             return { success: false, message: 'Account not found' };
         }
@@ -176,7 +175,7 @@ export class UserService{
     
         await this.BPAYHistory.create({
             username,
-            fromAccNumber,
+            fromAccount: accountName,
             billerCode,
             companyName,
             referenceNumber,
@@ -187,8 +186,8 @@ export class UserService{
 
         await this.transactionHistoryModel.create({
             username,
-            fromAccNumber,
-            toAccNumber: companyName,
+            fromAccount: accountName,
+            toAccount: companyName,
             amount: amount,
             date: new Date(),
             time: new Date().toLocaleTimeString()
@@ -281,15 +280,15 @@ export class UserService{
         }
     }
         // Method to add a new recurring payment
-    async addRecurringPayment(username: string, accountNumber: string, amount: number, startDate: Date, endDate: Date, frequency: string) {
-        const account = await this.userAccountModel.findOne({ accountNumber, username });
+    async addRecurringPayment(username: string, accountName: string, amount: number, startDate: Date, endDate: Date, frequency: string): Promise<{success: boolean, message: string}> {
+        const account = await this.userAccountModel.findOne({ accountName, username });
         if (!account) {
-            throw new HttpException('Account not found', 404);
+            return { success: false, message: 'Account not found' };
         }
 
         const newRecurringPayment = new this.recurringPaymentModel({
             username,
-            accountNumber,
+            accountName,
             amount,
             startDate,
             endDate,
@@ -298,7 +297,8 @@ export class UserService{
         });
 
         await newRecurringPayment.save();
-        return `Recurring payment added for user ${username} with account ${accountNumber}.`;
+        await this.processRecurringPayments(); 
+        return { success: true, message: 'Recurring payment added successfully' };
     }
 
     // Process recurring payments daily
@@ -312,15 +312,15 @@ export class UserService{
         });
 
         for (const payment of payments) {
-            const account = await this.userAccountModel.findOne({ accountNumber: payment.accountNumber });
+            const account = await this.userAccountModel.findOne({ accountName: payment.accountName });
             if (!account) {
-                console.log(`Account ${payment.accountNumber} not found, skipping payment.`);
+                console.log(`Account ${payment.accountName} not found, skipping payment.`);
                 continue;
             }
 
             // Check if the user has enough balance
             if (account.balance < payment.amount) {
-                console.log(`Insufficient funds in account ${payment.accountNumber}, skipping payment.`);
+                console.log(`Insufficient funds in account ${payment.accountName}, skipping payment.`);
                 continue;
             }
 
@@ -329,13 +329,13 @@ export class UserService{
             await account.save();
 
             // Log the payment (also create a transaction record here)
-            console.log(`Processed recurring payment of ${payment.amount} for account ${payment.accountNumber}.`);
+            console.log(`Processed recurring payment of ${payment.amount} for account ${payment.accountName}.`);
 
             // Create a new transaction record for this recurring payment
             await this.transactionHistoryModel.create({
                 username: payment.username,
-                fromAccNumber: payment.accountNumber,
-                toAccNumber: "Recurring Payment",
+                fromAccount: payment.accountName,
+                toAccount: "Recurring Payment",
                 amount: payment.amount,
                 date: new Date(),
                 time: new Date().toLocaleTimeString(),
@@ -353,13 +353,13 @@ export class UserService{
     calculateNextPaymentDate(currentDate: Date, frequency: string): Date {
         const nextDate = new Date(currentDate);
         switch (frequency) {
-            case 'weekly':
+            case 'Every week':
                 nextDate.setDate(currentDate.getDate() + 7); // Weekly payment
                 break;
-            case 'fortnightly':
+            case 'Every fortnight':
                 nextDate.setDate(currentDate.getDate() + 14); // Every two weeks
                 break;
-            case 'monthly':
+            case 'Every 6 months':
                 nextDate.setMonth(currentDate.getMonth() + 1); // Monthly payment
                 break;
             default:
