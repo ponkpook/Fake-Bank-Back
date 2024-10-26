@@ -7,8 +7,8 @@ import { AuthService } from './auth/auth.service';
 import { UserModule } from './User/users.module';
 
 @Module({
-  imports: [MongooseModule.forRoot('mongodb://localhost:27017/test'), 
-  //imports: [MongooseModule.forRoot('mongodb+srv://itproject:comp30022@it-project.yjfna.mongodb.net/'), 
+  //imports: [MongooseModule.forRoot('mongodb://localhost:27017/test'), 
+  imports: [MongooseModule.forRoot('mongodb+srv://itproject:comp30022@it-project.yjfna.mongodb.net/'), 
     UserModule,],
   controllers: [AppController, AuthController],
   providers: [AppService, AuthService],
