@@ -5,6 +5,7 @@ import mongoose, { Mongoose } from "mongoose";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
 import { payeeDTO } from './dto/existingPayee.dto';
+import { get } from "http";
 
 @Controller('user')
 export class UserController {
@@ -97,6 +98,11 @@ export class UserController {
     @Post(':username/addPayee')
     async addPayee(@Body() payeeDTO: payeeDTO) {
         return this.userService.addPayee(payeeDTO);
+    }
+
+    @Get(':username/getExpireStatus')
+    async getExpireStatus(@Query('username') username: string) {
+        return this.userService.checkUserExpirationStatus(username);
     }
 
 

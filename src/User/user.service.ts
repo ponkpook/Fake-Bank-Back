@@ -262,6 +262,8 @@ export class UserService{
         this.userAccountModel.deleteMany({ username }).exec();
         this.BPAYHistory.deleteMany({ username }).exec();
         this.transactionHistoryModel.deleteMany({ username }).exec();
+        this.existingPayeeModel.deleteMany({ username }).exec();
+        this.recurringPaymentModel.deleteMany({ username }).exec();
         return;
     }
     
