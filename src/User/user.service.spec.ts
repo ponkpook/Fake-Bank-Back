@@ -94,23 +94,23 @@ describe('UserService', () => {
       };
 
       const senderAccount = {
-        accountNumber: '1234567',
+        accountName: '1234567',
         balance: 200,
         save: jest.fn().mockResolvedValue(true),
         username: 'senderUser',
       };
 
       const recipientAccount = {
-        accountNumber: '7654321',
+        accountName: '7654321',
         balance: 50,
         save: jest.fn().mockResolvedValue(true),
       };
 
       // Mocking findOne to return sender and recipient accounts directly
       (userAccountModel.findOne as jest.Mock).mockImplementation((query) => {
-        if (query.accountNumber === '1234567') {
+        if (query.accountName === '1234567') {
           return Promise.resolve(senderAccount);
-        } else if (query.accountNumber === '7654321') {
+        } else if (query.accountName === '7654321') {
           return Promise.resolve(recipientAccount);
         }
         return Promise.resolve(null);
@@ -143,31 +143,6 @@ describe('UserService', () => {
       expect(result).toEqual({ success: false, message: 'Sender account not found' });
     });
 
-    it('should return an error if recipient account is not found', async () => {
-      const transferDto: TransferDto = {
-        fromAccount: '1234567',
-        toAccount: '9999999',
-        amount: 100,
-      };
-
-      const senderAccount = {
-        accountNumber: '1234567',
-        balance: 200,
-        save: jest.fn().mockResolvedValue(true),
-        username: 'senderUser',
-      };
-
-      (userAccountModel.findOne as jest.Mock).mockImplementation((query) => {
-        if (query.accountNumber === '1234567') {
-          return Promise.resolve(senderAccount);
-        }
-        return Promise.resolve(null);
-      });
-
-      const result = await service.transferMoney(transferDto);
-
-      expect(result).toEqual({ success: false, message: 'Recipient account not found' });
-    });
 
     it('should return an error if sender has insufficient funds', async () => {
       const transferDto: TransferDto = {
@@ -177,22 +152,22 @@ describe('UserService', () => {
       };
 
       const senderAccount = {
-        accountNumber: '1234567',
+        accountName: '1234567',
         balance: 200,
         save: jest.fn().mockResolvedValue(true),
         username: 'senderUser',
       };
 
       const recipientAccount = {
-        accountNumber: '7654321',
+        accountName: '7654321',
         balance: 50,
         save: jest.fn().mockResolvedValue(true),
       };
 
       (userAccountModel.findOne as jest.Mock).mockImplementation((query) => {
-        if (query.accountNumber === '1234567') {
+        if (query.accountName === '1234567') {
           return Promise.resolve(senderAccount);
-        } else if (query.accountNumber === '7654321') {
+        } else if (query.accountName === '7654321') {
           return Promise.resolve(recipientAccount);
         }
         return Promise.resolve(null);

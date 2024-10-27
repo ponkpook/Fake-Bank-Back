@@ -40,7 +40,7 @@ describe('AuthService', () => {
 
     const result = await authService.register('existingUser', 'password');
 
-    expect(result).toEqual({ msg: 'Username already exists', success: false });
+    expect(result).toEqual({ message: 'Username already exists', success: false });
   });
 
   it('should create a new user if username does not exist', async () => {
@@ -57,7 +57,7 @@ describe('AuthService', () => {
       date: expect.any(Date),
     });
     expect(userService.createDefaultAcc).toHaveBeenCalledWith('newUser');
-    expect(result).toEqual({ msg: 'User created', success: true });
+    expect(result).toEqual({ message: 'User created', success: true });
   });
 
   it('should set isAdmin to true for admin users', async () => {
@@ -74,6 +74,6 @@ describe('AuthService', () => {
       date: expect.any(Date),
     });
     expect(userService.createDefaultAcc).toHaveBeenCalledWith('admin1');
-    expect(result).toEqual({ msg: 'User created', success: true });
+    expect(result).toEqual({ message: 'User created', success: true });
   });
 });
