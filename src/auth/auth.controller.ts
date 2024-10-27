@@ -11,15 +11,12 @@ export class AuthController {
     }
 
     @Post('login')
-    async validate(@Body('username') username: string, @Body('password') password: string): Promise<{ success: boolean }> {
-        const isValid = await this.authService.validate(username, password);
-        return {success: isValid};
+    async validate(@Body('username') username: string, @Body('password') password: string): Promise<{ success: boolean, message: string }> {
+        return this.authService.validate(username, password);
     }
     
     @Post('register')
-    register(@Body('username') username: string, @Body('password') password: string): Promise<{msg:String, success:Boolean}> {
-        const confirmPassword = password;
-        return this.authService.register(username, password, confirmPassword);
+    async register(@Body('username') username: string, @Body('password') password: string){
+        return this.authService.register(username, password);
     }   
-
 }

@@ -5,6 +5,7 @@ import mongoose, { Mongoose } from "mongoose";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
 import { TransferDto } from './dto/Transfer.dto';
 import { payeeDTO } from './dto/existingPayee.dto';
+import { get } from "http";
 
 @Controller('user')
 export class UserController {
@@ -38,10 +39,8 @@ export class UserController {
     }
 
     @Get(':username/transactions')
-    async getUserAccount(@Param('username') username: string, @Param('accountNumber') accountNumber: string) {
-        const transactions = await this.userService.getUserTransactions(username);
-        if (!transactions) throw new HttpException('User not found', 404);
-        return transactions;
+    async getUserAccount(@Query('username') username: string) {
+        return this.userService.getUserTransactions(username);
     }
 
     @Post(':username/newAccount')
@@ -86,8 +85,8 @@ export class UserController {
 
     @Post(':username/BPAY')
     @UsePipes(new ValidationPipe())
-    async bpayPayment(@Query('username') username: string, @Query('accountNumber') accountNumber: string, @Query('amount') amount: number, @Query('billerCode') billerCode: string, @Query('companyName') companyName: string, @Query('referenceNumber') referenceNumber: string): Promise<string> {
-        return this.userService.bpayPayment(username, accountNumber, billerCode, companyName, referenceNumber, amount);
+    async bpayPayment(@Query('username') username: string, @Query('accountName') accountName: string, @Query('amount') amount: number, @Query('billerCode') billerCode: string, @Query('companyName') companyName: string, @Query('referenceNumber') referenceNumber: string): Promise<{success:boolean, message: string}> {
+        return this.userService.bpayPayment(username, accountName, billerCode, companyName, referenceNumber, amount);
     }
 
 
@@ -99,5 +98,32 @@ export class UserController {
     @Post(':username/addPayee')
     async addPayee(@Body() payeeDTO: payeeDTO) {
         return this.userService.addPayee(payeeDTO);
+    }
+
+    @Get(':username/getExpireStatus')
+    async getExpireStatus(@Query('username') username: string) {
+        return this.userService.checkUserExpirationStatus(username);
+    }
+
+
+            // Add a new recurring payment
+    @Post(':username/recurring-payment')
+    @UsePipes(new ValidationPipe())
+    async addRecurringPayment(
+        @Param('username') username: string,
+        @Body('accountName') accountName: string,
+        @Body('amount') amount: number,
+        @Body('startDate') startDate: string,
+        @Body('endDate') endDate: string,
+        @Body('frequency') frequency: string
+    ) {
+        return this.userService.addRecurringPayment(
+            username,
+            accountName,
+            amount,
+            new Date(startDate),
+            new Date(endDate),
+            frequency
+        );
     }
 }
