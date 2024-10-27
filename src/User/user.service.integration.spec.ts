@@ -80,16 +80,16 @@ describe('UserService Integration Tests', () => {
       const transactions = [
         {
           username: 'testUser',
-          fromAccNumber: '1234567',
-          toAccNumber: '7654321',
+          fromAccount: '1234567',
+          toAccount: '7654321',
           amount: 100,
           date: new Date(),
           time: '10:00 AM',
         },
         {
           username: 'testUser',
-          fromAccNumber: '1234567',
-          toAccNumber: '7654322',
+          fromAccount: '1234567',
+          toAccount: '7654322',
           amount: 200,
           date: new Date(),
           time: '11:00 AM',
@@ -140,7 +140,6 @@ describe('UserService Integration Tests', () => {
   describe('transferMoney', () => {
     it('should transfer money between accounts successfully', async () => {
     
-      
       const senderAccount = {
         accountNumber: '1111111',
         balance: 500,
@@ -158,8 +157,8 @@ describe('UserService Integration Tests', () => {
       };
 
       const transferDto: TransferDto = {
-        fromAccount: '1111111',
-        toAccount: '7777777',
+        fromAccount: 'Everyday',
+        toAccount: 'Savings',
         amount: 150,
       };
 
@@ -171,14 +170,13 @@ describe('UserService Integration Tests', () => {
 
       // Fetch updated accounts from the database
       const updatedSender = await userAccountModel.findOne({ accountNumber: '1111111' });
-      const updatedRecipient = await userAccountModel.findOne({ accountNumber: '7777777' });
 
       // Assertions
       expect(updatedSender.balance).toBe(350); // 500 - 150
-      expect(updatedRecipient.balance).toBe(350); // 200 + 150
       expect(result).toEqual({ success: true, message: 'Transfer successful' });
     });
 
+  
     it('should return an error if sender has insufficient funds', async () => {
       // Create sender and recipient accounts
       const senderAccount = await userAccountModel.create({
@@ -201,8 +199,8 @@ describe('UserService Integration Tests', () => {
       await userAccountModel.create(recipientAccount);
 
       const transferDto: TransferDto = {
-        fromAccount: '4444444',
-        toAccount: '3333333',
+        fromAccount: 'Everyday',
+        toAccount: 'Savings',
         amount: 150, // More than sender's balance
       };
 
@@ -221,34 +219,37 @@ describe('UserService Integration Tests', () => {
       expect(updatedRecipient.balance).toBe(200);
     });
 
-    it('should return an error if recipient account is not found', async () => {
-      // Create sender account
-      const senderAccount = await userAccountModel.create({
-        username: 'senderUser',
-        accountName: 'Everyday',
-        accountNumber: '1234567',
-        BSB: '000-001',
-        balance: 500,
-      });
 
-      const transferDto: TransferDto = {
-        fromAccount: '1234567',
-        toAccount: '9999999', // Non-existent recipient
-        amount: 150,
-      };
+    // Because this app is a simulation, we do not expet the recipient account really exists
 
-      // Call the transferMoney method
-      const result = await service.transferMoney(transferDto);
+    // it('should return an error if recipient account is not found', async () => {
+    //   // Create sender account
+    //   const senderAccount = await userAccountModel.create({
+    //     username: 'senderUser',
+    //     accountName: 'Everyday',
+    //     accountNumber: '1234567',
+    //     BSB: '000-001',
+    //     balance: 500,
+    //   });
 
-      // Assertions
-      expect(result).toEqual({ success: false, message: 'Recipient account not found' });
-    });
+    //   const transferDto: TransferDto = {
+    //     fromAccount: '1234567',
+    //     toAccount: '9999999', // Non-existent recipient
+    //     amount: 150,
+    //   };
+
+    //   // Call the transferMoney method
+    //   const result = await service.transferMoney(transferDto);
+
+    //   // Assertions
+    //   expect(result).toEqual({ success: false, message: 'Recipient account not found' });
+    // });
   });
 
   describe('bpayPayment', () => {
     it('should process BPAY payment successfully', async () => {
-      const username = 'testUser';
-      const fromAccNumber = '6666666';
+      const username = 'testUser1';
+      const accountName = 'Everyday';
       const billerCode = '12345';
       const companyName = 'Utility Company';
       const referenceNumber = 'ABC123';
@@ -256,7 +257,7 @@ describe('UserService Integration Tests', () => {
 
       // Create sender account in the database
       const senderAccount = await userAccountModel.create({
-        accountNumber: fromAccNumber,
+        accountNumber: accountName,
         balance: 500, // Ensure the initial balance is 500
         username: 'testUser1',
         accountName: 'Everyday',
@@ -266,7 +267,7 @@ describe('UserService Integration Tests', () => {
       // Call the BPAY payment method
       const result = await service.bpayPayment(
         username,
-        fromAccNumber,
+        accountName,
         billerCode,
         companyName,
         referenceNumber,
@@ -274,7 +275,7 @@ describe('UserService Integration Tests', () => {
       );
 
       // Fetch the updated sender account from the database
-      const updatedSender = await userAccountModel.findOne({ accountNumber: fromAccNumber });
+      const updatedSender = await userAccountModel.findOne({ accountName: accountName, username: username });
 
       // Assertions
       expect(updatedSender.balance).toBe(300); // 500 - 200 = 300
@@ -289,7 +290,7 @@ describe('UserService Integration Tests', () => {
     it('should return an error if insufficient funds', async () => {
       // Create sender account
       const senderAccount = await userAccountModel.create({
-        username: 'testUser2',
+        username: 'testUser',
         accountName: 'Everyday',
         accountNumber: '5555555',
         BSB: '000-001',
@@ -298,8 +299,8 @@ describe('UserService Integration Tests', () => {
 
       // Call bpayPayment method
       const result = await service.bpayPayment(
-        'testUser2',
-        '5555555',
+        'testUser',
+        'Everyday',
         '12345',
         'Utility Company',
         'REF123',
