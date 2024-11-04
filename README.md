@@ -67,6 +67,6 @@ This project is a back-end application simulating a bank's services, including a
    - Run "npm start" to launch the project on the local development server.
    - To test with local mongodb database, create a local mongodb database on localhost:27017 using tools like mongodb compass.
       - Go to app.module.ts.
-      - uncomment line 10:  `//imports: [MongooseModule.forRoot('mongodb://localhost:27017'),` 
+      - uncomment line 10:  `//imports: [MongooseModule.forRoot('mongodb://localhost:27017/test'),` 
       - comment line 11: `imports: [MongooseModule.forRoot(...)`
    
