@@ -65,9 +65,8 @@ This project is a back-end application simulating a bank's services, including a
 3. **Project Startup**:
    - Ensure all dependencies are installed.
    - Run "npm start" to launch the project on the local development server.
-   - Default online database URI: 'mongodb+srv://itproject:comp30022@it-project.yjfna.mongodb.net/'
    - To test with local mongodb database, create a local mongodb database on localhost:27017 using tools like mongodb compass.
       - Go to app.module.ts.
-      - uncomment the line: `//imports: [MongooseModule.forRoot('mongodb://localhost:27017'),` 
-      - comment the line: `imports: [MongooseModule.forRoot('mongodb+srv://itproject:comp30022@it-project.yjfna.mongodb.`
+      - uncomment line 10:  `//imports: [MongooseModule.forRoot('mongodb://localhost:27017'),` 
+      - comment line 11: `imports: [MongooseModule.forRoot(...)`
    
